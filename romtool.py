@@ -49,17 +49,14 @@ def approximate_match(src_file, dst_file):
         return True
     return False
 
-
+# Returns (match, name1, name2, same_name, same_content, size1, size2)
 def diff_file(src_file, dst_file, src, dst):
-    
     if src_file == dst_file:
-        print(src_file,'=', dst_file)
-        print('   - Exact filename match')
+        same_name = True
     elif approximate_match(src_file, dst_file):
-        print(src_file,'=', dst_file)
-        print('   - Approximate filename match')
+        same_name = False
     else:
-        return False
+        return (False, src_file, dst_file, False, False, 0, 0)
 
     src_path = os.path.join(src,src_file)
     dst_path = os.path.join(dst,dst_file)
@@ -68,13 +65,24 @@ def diff_file(src_file, dst_file, src, dst):
 
     if src_size == dst_size:
         if filecmp.cmp(src_path,dst_path, shallow=False):
-            print('   - File contents are identical') 
-            return True
+            return (True, src_file, dst_file, same_name, True, src_size, dst_size)
+
+    return (True, src_file, dst_file, same_name, False, src_size, dst_size)
+
+def print_diff(match, filename1, filename2, same_name, same_content, size1, size2):
+    if match:
+        print(filename1,'=', filename2)
+        if same_name:
+            print('   - Exact filename match')
         else:
-            print(f'   - Files contents are not identical but has same size ({src_size} bytes)')
-    else:
-        print(f'   - File size differs ({src_size} vs {dst_size} bytes)')
-    return False
+            print('   - Approximate filename match')
+        if same_content:
+            print('   - File contents is identical')
+        elif size1 == size2:
+            print(f'   - Files contents are not identical but has same size ({size1} bytes)')
+        else:
+            print(f'   - File size differs ({size1} vs {size2} bytes)')
+
 
 
 def diff(src, dst, ext):
@@ -83,7 +91,7 @@ def diff(src, dst, ext):
 
     for src_file in src_files:
         for dst_file in dst_files:
-            diff_file(src_file, dst_file, src, dst)
+            print_diff(*diff_file(src_file, dst_file, src, dst))
 
 def dup(dir, ext, delete_identical):
     files = listfiles(dir, ext)
@@ -91,7 +99,9 @@ def dup(dir, ext, delete_identical):
     while files:
         file = files.pop()
         for file2 in files:
-            if diff_file(file, file2, dir, dir) and delete_identical:
+            diff_res = diff_file(file, file2, dir, dir)
+            if diff_res[0] and delete_identical:
+                print_diff(*diff_res)
                 print('   - Deleting file', file)
                 os.remove(os.path.join(dir,file))
                 break
