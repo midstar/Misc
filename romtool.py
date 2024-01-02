@@ -74,11 +74,11 @@ def diff_file(src_file, dst_file, src, dst):
             src_path, src_size = extract_zip(src_path, 'src')
         if extension(dst_file) == 'zip':
             dst_path, dst_size = extract_zip(dst_path, 'dst')
-    
-        same = src_size == dst_size and filecmp.cmp(src_path,dst_path, shallow=False)
-        shutil.rmtree(TEMPDIR) # Clean-up
-        if same:
-            return (True, src_file, dst_file, same_name, True, src_size, dst_size)
+        if src_path != '' and dst_path != '':
+            same = src_size == dst_size and filecmp.cmp(src_path,dst_path, shallow=False)
+            shutil.rmtree(TEMPDIR) # Clean-up
+            if same:
+                return (True, src_file, dst_file, same_name, True, src_size, dst_size)
 
     return (True, src_file, dst_file, same_name, False, src_size, dst_size)
 
@@ -166,7 +166,7 @@ def extract_zip(path, unzip_path = ''):
         new_path = os.path.join(out_path, zip_internal_path)
         return (new_path, os.stat(new_path).st_size)
 
-def zip(dir, ext):
+def zip(dir, ext, delete):
     files = listfiles(dir, ext)
 
     for filename in files:
@@ -178,6 +178,8 @@ def zip(dir, ext):
                 print(filename, ' -> ', zip_filename)
                 with zipfile.ZipFile(pathname_zip,'w', compression=zipfile.ZIP_DEFLATED, allowZip64=True) as zip: 
                     zip.write(pathname) 
+                if delete:
+                    os.remove(pathname)
 
 def copy(src, dst, ext, remove_numbers, remove_similar):
     src_files = listfiles(src, ext)
@@ -237,6 +239,7 @@ def main():
     zip_parser = subparsers.add_parser('zip', help='Zip all files in directory')
     zip_parser.add_argument('dir', help='Directory')
     zip_parser.add_argument('-e', '--ext', help='Extension', default='*')
+    zip_parser.add_argument('-d', '--del', help='Delete file after zip', action='store_true')
 
     args = vars(parser.parse_args())
 
@@ -249,7 +252,7 @@ def main():
     elif args['cmd'] == 'rep': 
         replace(args['dir'], args['org'], args['new'], args['ext'])  
     elif args['cmd'] == 'zip': 
-        zip(args['dir'], args['ext'])     
+        zip(args['dir'], args['ext'], args['del'])     
     else:
         print('Invalid command:', args['cmd'])
 
