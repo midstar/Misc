@@ -71,9 +71,9 @@ def diff_file(src_file, dst_file, src, dst):
     
     if extension(src_file) == 'zip' or extension(dst_file) == 'zip':
         if extension(src_file) == 'zip':
-            src_path, src_size = extract_zip(src_path)
+            src_path, src_size = extract_zip(src_path, 'src')
         if extension(dst_file) == 'zip':
-            dst_path, dst_size = extract_zip(dst_path)
+            dst_path, dst_size = extract_zip(dst_path, 'dst')
         if src_size == dst_size:
             if filecmp.cmp(src_path,dst_path, shallow=False):
                 return (True, src_file, dst_file, same_name, True, src_size, dst_size)
@@ -101,8 +101,13 @@ def diff(src, dst, ext):
     dst_files = listfiles(dst, ext)
 
     for src_file in src_files:
+        unique = True
         for dst_file in dst_files:
-            print_diff(*diff_file(src_file, dst_file, src, dst))
+            diff_res = diff_file(src_file, dst_file, src, dst)
+            if diff_res[0]:
+                print_diff(*diff_res)
+                unique = False
+        if unique: print(src_file, '(unique)')
 
 def dup(dir, ext, delete_identical):
     files = listfiles(dir, ext)
@@ -131,17 +136,18 @@ def replace(dir, org, new, ext):
 
 # Extract file from zip return (extracted_file_path, size)
 # Only works for zip files containing 1 file
-def extract_zip(path):
+def extract_zip(path, unzip_path = ''):
 
-    if not os.path.exists(TEMPDIR):
-        os.makedirs(TEMPDIR)
+    out_path = os.path.join(TEMPDIR, unzip_path)
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
 
     with zipfile.ZipFile(path,'r') as zip:
         namelist = zip.namelist()
         if len(namelist) != 1: return ('', 0)
         zip_internal_path = namelist[0]
-        zip.extract(zip_internal_path, path=TEMPDIR)
-        new_path = os.path.join(TEMPDIR, zip_internal_path)
+        zip.extract(zip_internal_path, path=out_path)
+        new_path = os.path.join(out_path, zip_internal_path)
         return (new_path, os.stat(new_path).st_size)
 
 def zip(dir, ext):
