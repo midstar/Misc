@@ -118,11 +118,25 @@ def dup(dir, ext, delete_identical):
         file = files.pop()
         for file2 in files:
             diff_res = diff_file(file, file2, dir, dir)
-            if diff_res[0] and delete_identical:
+            if diff_res[0]:
                 print_diff(*diff_res)
-                print('   - Deleting file', file)
-                os.remove(os.path.join(dir,file))
-                break
+                if delete_identical:
+                    print()
+                    print(f'[1]   {file}')
+                    print(f'[2]   {file2}')
+                    print()
+                    answer = input(f'Select file to remove or enter for none [1/2]:')
+                    file_delete = ''
+                    if answer == '1':
+                        file_delete = file
+                    elif answer == '2':
+                        file_delete = file2
+                        files.remove(file2)
+                    else:
+                        continue
+                    print('   - Deleting file', file_delete)
+                    os.remove(os.path.join(dir,file_delete))
+                    break
 
 
 def replace(dir, org, new, ext):
@@ -165,20 +179,33 @@ def zip(dir, ext):
                 with zipfile.ZipFile(pathname_zip,'w', compression=zipfile.ZIP_DEFLATED, allowZip64=True) as zip: 
                     zip.write(pathname) 
 
-def copy(src, dst, ext, remove_numbers):
-    print('SRC:', src)
-    print('DST:', dst)
-    print()
-    for filename in listfiles(src, ext):
-        pathname = os.path.join(src,filename)
-        filename_dst = remove_numbering(filename) if remove_numbers else filename
-        pathname_dst = os.path.join(dst,filename_dst)
+def copy(src, dst, ext, remove_numbers, remove_similar):
+    src_files = listfiles(src, ext)
+    dst_files = listfiles(dst, ext)
 
-        print(filename,'->', filename_dst)
-        if os.path.isfile(pathname_dst):
-            print('  No copy - already exists')
+    for src_file in src_files:
+        dst_tmp = dst_files[:]
+        for dst_file in dst_tmp:
+            match, _, _, same_name, same_content, _, _ = diff_file(src_file, dst_file, src, dst)
+            if match and remove_similar:
+                if not same_content:
+                    print()
+                    print(f'"{src_file}" at source has similar file at dest:')
+                    answer = input(f'   - "{dst_file}" remove? [y/N]:')
+                    if answer.lower() == 'n':
+                        continue
+                dst_files.remove(dst_file)
+                os.remove(os.path.join(dst,dst_file))
+
+        path_src = os.path.join(src,src_file)
+        dst_file = remove_numbering(src_file) if remove_numbers else src_file
+        path_dst = os.path.join(dst,dst_file)
+        print(src_file,'->', dst_file)
+        if os.path.isfile(path_dst):
+            print('   - No copy - already exists')
         else:
-            shutil.copyfile(pathname, pathname_dst)  
+            shutil.copyfile(path_src, path_dst)  
+
 
 def main():
     parser = argparse.ArgumentParser(description='Emulator ROM tool')
@@ -188,7 +215,8 @@ def main():
     copy_parser.add_argument('src', help='Source directory')
     copy_parser.add_argument('dst', help='Destination directory')
     copy_parser.add_argument('-e', '--ext', help='Extension', default='*')
-    copy_parser.add_argument('-n', '--remove-numbering', help='Remove prefix numbering', action='store_true')
+    copy_parser.add_argument('-n', '--removenum', help='Remove prefix numbering', action='store_true')
+    copy_parser.add_argument('-r', '--removesim', help='Remove similar files at dst', action='store_true')
 
     diff_parser = subparsers.add_parser('diff', help='Diff directories')
     diff_parser.add_argument('src', help='Source directory')
@@ -213,7 +241,7 @@ def main():
     args = vars(parser.parse_args())
 
     if args['cmd'] == 'copy':
-        copy(args['src'], args['dst'], args['ext'], args['remove-numbering'])
+        copy(args['src'], args['dst'], args['ext'], args['removenum'], args['removesim'])
     elif args['cmd'] == 'diff': 
         diff(args['src'], args['dst'], args['ext'])
     elif args['cmd'] == 'dup': 
