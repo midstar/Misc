@@ -74,9 +74,11 @@ def diff_file(src_file, dst_file, src, dst):
             src_path, src_size = extract_zip(src_path, 'src')
         if extension(dst_file) == 'zip':
             dst_path, dst_size = extract_zip(dst_path, 'dst')
-        if src_size == dst_size:
-            if filecmp.cmp(src_path,dst_path, shallow=False):
-                return (True, src_file, dst_file, same_name, True, src_size, dst_size)
+    
+        same = src_size == dst_size and filecmp.cmp(src_path,dst_path, shallow=False)
+        shutil.rmtree(TEMPDIR) # Clean-up
+        if same:
+            return (True, src_file, dst_file, same_name, True, src_size, dst_size)
 
     return (True, src_file, dst_file, same_name, False, src_size, dst_size)
 
