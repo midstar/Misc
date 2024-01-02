@@ -2,7 +2,7 @@
 
 import argparse, os, shutil, filecmp, zipfile
 
-def fix_filename(filename):
+def remove_numbering(filename):
     if ' ' in filename and filename[:filename.index(' ')].isnumeric():
         filename = filename[filename.index(' ') + 1:] 
     return filename
@@ -31,8 +31,11 @@ def remove_brackets(filename,start,stop):
 
 
 def approximate_match(src_file, dst_file):
-    src_file = fix_filename(src_file).lower()
-    dst_file = fix_filename(dst_file).lower()
+    src_file = os.path.splitext(src_file)[0]
+    dst_file = os.path.splitext(dst_file)[0]
+
+    src_file = remove_numbering(src_file).lower()
+    dst_file = remove_numbering(dst_file).lower()
 
     for start, stop in [('(',')'),('[',']'),('<','>')]:
         src_file = remove_brackets(src_file, start, stop)
@@ -118,13 +121,13 @@ def zip(dir, ext):
                 with zipfile.ZipFile(pathname_zip,'w', compression=zipfile.ZIP_DEFLATED, allowZip64=True) as zip: 
                     zip.write(pathname) 
 
-def copy(src, dst, ext):
+def copy(src, dst, ext, remove_numbers):
     print('SRC:', src)
     print('DST:', dst)
     print()
     for filename in listfiles(src, ext):
         pathname = os.path.join(src,filename)
-        filename_dst = fix_filename(filename)
+        filename_dst = remove_numbering(filename) if remove_numbers else filename
         pathname_dst = os.path.join(dst,filename_dst)
 
         print(filename,'->', filename_dst)
@@ -141,6 +144,7 @@ def main():
     copy_parser.add_argument('src', help='Source directory')
     copy_parser.add_argument('dst', help='Destination directory')
     copy_parser.add_argument('-e', '--ext', help='Extension', default='*')
+    copy_parser.add_argument('-n', '--remove-numbering', help='Remove prefix numbering', action='store_true')
 
     diff_parser = subparsers.add_parser('diff', help='Diff directories')
     diff_parser.add_argument('src', help='Source directory')
@@ -165,7 +169,7 @@ def main():
     args = vars(parser.parse_args())
 
     if args['cmd'] == 'copy':
-        copy(args['src'], args['dst'], args['ext'])
+        copy(args['src'], args['dst'], args['ext'], args['remove-numbering'])
     elif args['cmd'] == 'diff': 
         diff(args['src'], args['dst'], args['ext'])
     elif args['cmd'] == 'dup': 
