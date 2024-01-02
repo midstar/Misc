@@ -1,6 +1,8 @@
 # This is a tool useful for handling Emulator ROM files
 
-import argparse, os, shutil, filecmp, zipfile
+import argparse, os, shutil, filecmp, zipfile, tempfile
+
+TEMPDIR = os.path.join(tempfile.gettempdir(), 'romtool')
 
 def remove_numbering(filename):
     if ' ' in filename and filename[:filename.index(' ')].isnumeric():
@@ -66,6 +68,15 @@ def diff_file(src_file, dst_file, src, dst):
     if src_size == dst_size:
         if filecmp.cmp(src_path,dst_path, shallow=False):
             return (True, src_file, dst_file, same_name, True, src_size, dst_size)
+    
+    if extension(src_file) == 'zip' or extension(dst_file) == 'zip':
+        if extension(src_file) == 'zip':
+            src_path, src_size = extract_zip(src_path)
+        if extension(dst_file) == 'zip':
+            dst_path, dst_size = extract_zip(dst_path)
+        if src_size == dst_size:
+            if filecmp.cmp(src_path,dst_path, shallow=False):
+                return (True, src_file, dst_file, same_name, True, src_size, dst_size)
 
     return (True, src_file, dst_file, same_name, False, src_size, dst_size)
 
@@ -117,6 +128,21 @@ def replace(dir, org, new, ext):
             pathname_new = os.path.join(dir,filename_new)
             print(filename,'->', filename_new)
             os.rename(pathname, pathname_new)
+
+# Extract file from zip return (extracted_file_path, size)
+# Only works for zip files containing 1 file
+def extract_zip(path):
+
+    if not os.path.exists(TEMPDIR):
+        os.makedirs(TEMPDIR)
+
+    with zipfile.ZipFile(path,'r') as zip:
+        namelist = zip.namelist()
+        if len(namelist) != 1: return ('', 0)
+        zip_internal_path = namelist[0]
+        zip.extract(zip_internal_path, path=TEMPDIR)
+        new_path = os.path.join(TEMPDIR, zip_internal_path)
+        return (new_path, os.stat(new_path).st_size)
 
 def zip(dir, ext):
     files = listfiles(dir, ext)
