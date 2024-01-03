@@ -181,6 +181,17 @@ def zip(dir, ext, delete):
                 if delete:
                     os.remove(pathname)
 
+def unzip(dir, delete):
+    files = listfiles(dir, 'zip')
+
+    for filename in files:
+        pathname = os.path.join(dir,filename)
+        with zipfile.ZipFile(pathname,'r') as zip:
+            print(filename, ' -> ', *zip.namelist())
+            zip.extractall(dir)
+        if delete:
+            os.remove(pathname)
+
 def copy(src, dst, ext, remove_numbers, remove_similar):
     src_files = listfiles(src, ext)
     dst_files = listfiles(dst, ext)
@@ -241,6 +252,10 @@ def main():
     zip_parser.add_argument('-e', '--ext', help='Extension', default='*')
     zip_parser.add_argument('-d', '--del', help='Delete file after zip', action='store_true')
 
+    unzip_parser = subparsers.add_parser('unzip', help='Unzip all files in directory')
+    unzip_parser.add_argument('dir', help='Directory')
+    unzip_parser.add_argument('-d', '--del', help='Delete zip file after unzip', action='store_true')
+
     args = vars(parser.parse_args())
 
     if args['cmd'] == 'copy':
@@ -253,6 +268,8 @@ def main():
         replace(args['dir'], args['org'], args['new'], args['ext'])  
     elif args['cmd'] == 'zip': 
         zip(args['dir'], args['ext'], args['del'])     
+    elif args['cmd'] == 'unzip': 
+        unzip(args['dir'], args['del'])   
     else:
         print('Invalid command:', args['cmd'])
 
