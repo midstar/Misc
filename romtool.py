@@ -219,6 +219,35 @@ def copy(src, dst, ext, remove_numbers, remove_similar):
         else:
             shutil.copyfile(path_src, path_dst)  
 
+def no_ext_cmp(file, files):
+    file = os.path.splitext(file)[0]
+    for file2 in files:
+        if file == os.path.splitext(file2)[0]: return True
+    return False
+
+def img(dir, img, romext, imgext):
+    img_extensions = ['jpg', 'jpeg', 'gif', 'tiff', 'png', 'bmp']
+    if img == '*' : img = dir
+    rom_files = listfiles(dir, romext)
+    img_files = listfiles(img, imgext)
+    if romext == '*':
+        rom_files = list(filter(lambda x: extension(x) not in img_extensions, rom_files))
+    if imgext == '*':
+        img_files = list(filter(lambda x: extension(x) in img_extensions, img_files))
+    rom_img_match = list(filter(lambda x: no_ext_cmp(x, img_files), rom_files))
+    rom_img_no_match = list(filter(lambda x: not no_ext_cmp(x, img_files), rom_files))
+    img_rom_no_match = list(filter(lambda x: not no_ext_cmp(x, rom_files), img_files))
+
+    print('Nbr of roms with matching image:   ', len(rom_img_match))
+    print()
+    print('Nbr of roms with no matching image:', len(rom_img_no_match))
+    for rom in rom_img_no_match:
+        print('   ', rom)
+    print()
+    print('Nbr of images with no matching rom:', len(img_rom_no_match))
+    for img in img_rom_no_match:
+        print('   ', img)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Emulator ROM tool')
@@ -240,6 +269,12 @@ def main():
     dup_parser.add_argument('dir', help='Directory')
     dup_parser.add_argument('-e', '--ext', help='Extension', default='*')
     dup_parser.add_argument('-d', '--del', help='Delete binary identical files', action='store_true')
+
+    img_parser = subparsers.add_parser('img', help='Check missing images')
+    img_parser.add_argument('dir', help='Directory')
+    img_parser.add_argument('img', help='Image directory (default same as dir)', nargs='?', default='*')
+    img_parser.add_argument('-re', '--romext', help='ROM extension', default='*')
+    img_parser.add_argument('-ie', '--imgext', help='Image extension', default='*')
 
     rep_parser = subparsers.add_parser('rep', help='Replace strings in file names')
     rep_parser.add_argument('dir', help='Directory')
@@ -270,6 +305,8 @@ def main():
         zip(args['dir'], args['ext'], args['del'])     
     elif args['cmd'] == 'unzip': 
         unzip(args['dir'], args['del'])   
+    elif args['cmd'] == 'img': 
+        img(args['dir'], args['img'], args['romext'], args['imgext'])   
     else:
         print('Invalid command:', args['cmd'])
 
