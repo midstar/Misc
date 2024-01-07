@@ -225,7 +225,7 @@ def no_ext_cmp(file, files):
         if file == os.path.splitext(file2)[0]: return True
     return False
 
-def img(dir, img, romext, imgext):
+def img(dir, img, romext, imgext, summary):
     img_extensions = ['jpg', 'jpeg', 'gif', 'tiff', 'png', 'bmp']
     if img == '*' : img = dir
     rom_files = listfiles(dir, romext)
@@ -241,12 +241,14 @@ def img(dir, img, romext, imgext):
     print('Nbr of roms with matching image:   ', len(rom_img_match))
     print()
     print('Nbr of roms with no matching image:', len(rom_img_no_match))
-    for rom in rom_img_no_match:
-        print('   ', rom)
+    if not summary:
+        for rom in rom_img_no_match:
+            print('   ', rom)
     print()
     print('Nbr of images with no matching rom:', len(img_rom_no_match))
-    for img in img_rom_no_match:
-        print('   ', img)
+    if not summary:
+        for img in img_rom_no_match:
+            print('   ', img)
 
 
 def main():
@@ -275,6 +277,7 @@ def main():
     img_parser.add_argument('img', help='Image directory (default same as dir)', nargs='?', default='*')
     img_parser.add_argument('-re', '--romext', help='ROM extension', default='*')
     img_parser.add_argument('-ie', '--imgext', help='Image extension', default='*')
+    img_parser.add_argument('-s', '--summary', help='Print summary only', action='store_true')
 
     rep_parser = subparsers.add_parser('rep', help='Replace strings in file names')
     rep_parser.add_argument('dir', help='Directory')
@@ -306,7 +309,7 @@ def main():
     elif args['cmd'] == 'unzip': 
         unzip(args['dir'], args['del'])   
     elif args['cmd'] == 'img': 
-        img(args['dir'], args['img'], args['romext'], args['imgext'])   
+        img(args['dir'], args['img'], args['romext'], args['imgext'], args['summary'])   
     else:
         print('Invalid command:', args['cmd'])
 
