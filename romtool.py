@@ -31,23 +31,47 @@ def remove_brackets(filename,start,stop):
         filename = filename[:start_i] + filename[stop_i + 1:]
     return filename
 
+def fix_filename(filename):
+    filename = os.path.splitext(filename)[0]
 
-def approximate_match(src_file, dst_file):
-    src_file = os.path.splitext(src_file)[0]
-    dst_file = os.path.splitext(dst_file)[0]
-
-    src_file = remove_numbering(src_file).lower()
-    dst_file = remove_numbering(dst_file).lower()
+    filename = remove_numbering(filename).lower()
 
     for start, stop in [('(',')'),('[',']'),('<','>')]:
-        src_file = remove_brackets(src_file, start, stop)
-        dst_file = remove_brackets(dst_file, start, stop)
+        filename = remove_brackets(filename, start, stop)
 
     for c in '!@#$%^&*()[]{};:,./<>?\|"\'`~-=_+ ':
-        src_file = src_file.replace(c,'')
-        dst_file = dst_file.replace(c,'')
+        filename = filename.replace(c,'')
 
-    if src_file == dst_file:
+    return filename
+
+def get_version(filename):
+    filename2 = os.path.splitext(filename)[0]
+
+    for c in '!@#$%^&*()[]{};:,./<>?\|"\'`~-=_+ ':
+        filename2 = filename2.replace(c,' ')
+    filename2 = filename2.split()
+    filename2 = filename2[1:] # Version is never first
+
+    for v in range(10,0,-1):
+        if str(v) in filename2:
+            filename = filename.replace(str(v), '')
+            return (filename, v)
+
+    for i, v in enumerate(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX']):
+        if v in filename2:
+            filename = filename.replace(v, '')
+            return (filename, i+1)
+    
+    return (filename, 1)
+
+def approximate_match(src_file, dst_file):
+    src_file, src_version = get_version(src_file)
+    dst_file, dst_version = get_version(dst_file)
+
+    src_file = fix_filename(src_file)
+    dst_file = fix_filename(dst_file)
+
+    if (src_file in dst_file or dst_file in src_file) and src_version == dst_version:
         return True
     return False
 
