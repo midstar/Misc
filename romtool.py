@@ -135,16 +135,16 @@ def diff(src, dst, ext):
                 unique = False
         if unique: print(src_file, '(unique)')
 
-def dup(dir, ext, delete_identical):
+def dup(dir, ext, delete_similar, same_content):
     files = listfiles(dir, ext)
 
     while files:
         file = files.pop()
         for file2 in files:
             diff_res = diff_file(file, file2, dir, dir)
-            if diff_res[0]:
+            if diff_res[0] and (same_content == False or diff_res[4]):
                 print_diff(*diff_res)
-                if delete_identical:
+                if delete_similar:
                     print()
                     print(f'[1]   {file}')
                     print(f'[2]   {file2}')
@@ -294,7 +294,8 @@ def main():
     dup_parser = subparsers.add_parser('dup', help='Check for duplicates')
     dup_parser.add_argument('dir', help='Directory')
     dup_parser.add_argument('-e', '--ext', help='Extension', default='*')
-    dup_parser.add_argument('-d', '--del', help='Delete binary identical files', action='store_true')
+    dup_parser.add_argument('-d', '--del', help='Delete similar files (ask first)', action='store_true')
+    dup_parser.add_argument('-i', '--identical', help='Only list files with same content', action='store_true')
 
     img_parser = subparsers.add_parser('img', help='Check missing images')
     img_parser.add_argument('dir', help='Directory')
@@ -325,7 +326,7 @@ def main():
     elif args['cmd'] == 'diff': 
         diff(args['src'], args['dst'], args['ext'])
     elif args['cmd'] == 'dup': 
-        dup(args['dir'], args['ext'], args['del'])     
+        dup(args['dir'], args['ext'], args['del'], args['identical'])   
     elif args['cmd'] == 'rep': 
         replace(args['dir'], args['org'], args['new'], args['ext'])  
     elif args['cmd'] == 'zip': 
