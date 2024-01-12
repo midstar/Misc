@@ -9,7 +9,10 @@ def remove_numbering(filename):
         filename = filename[filename.index(' ') + 1:] 
     return filename
 
-def extension(filename):
+def no_ext(filename):
+    return os.path.splitext(filename)[0]
+
+def get_ext(filename):
     return os.path.splitext(filename)[-1][1:].lower()
 
 def listfiles(path, ext):
@@ -17,7 +20,7 @@ def listfiles(path, ext):
     for filename in os.listdir(path):  
         pathname = os.path.join(path,filename)
         if not os.path.isfile(pathname): continue
-        if ext.lower() not in ['*', extension(filename)]: continue
+        if ext.lower() not in ['*', get_ext(filename)]: continue
         filenames.append(filename)
     filenames.sort()
     return filenames
@@ -31,25 +34,32 @@ def remove_brackets(filename,start,stop):
         filename = filename[:start_i] + filename[stop_i + 1:]
     return filename
 
-def fix_filename(filename):
-    filename = os.path.splitext(filename)[0]
+def remove_meta(filename):
+    filename = no_ext(filename)
 
     filename = remove_numbering(filename).lower()
 
     for start, stop in [('(',')'),('[',']'),('<','>')]:
         filename = remove_brackets(filename, start, stop)
 
+    return filename
+
+def fix_filename(filename):
+    filename = remove_meta(filename)
+
     for c in '!@#$%^&*()[]{};:,./<>?\|"\'`~-=_+ ':
         filename = filename.replace(c,'')
 
     return filename
 
-def get_version(filename):
-    filename2 = os.path.splitext(filename)[0]
-
+def get_words(filename):
+    filename = remove_meta(filename)
     for c in '!@#$%^&*()[]{};:,./<>?\|"\'`~-=_+ ':
-        filename2 = filename2.replace(c,' ')
-    filename2 = filename2.split()
+        filename = filename.replace(c,' ')
+    return filename.split()
+
+def get_version(filename):
+    filename2 = get_words(filename)
     filename2 = filename2[1:] # Version is never first
 
     for v in range(10,0,-1):
@@ -64,16 +74,34 @@ def get_version(filename):
     
     return (filename, 1)
 
+def score_match(src_file, dst_file):
+    src_words = get_words(src_file)
+    dst_words = get_words(dst_file)
+    if len(src_words) < len(dst_words):
+        words1 = src_words
+        words2 = dst_words
+    else:
+        words1 = dst_words
+        words2 = src_words
+
+    matches = 0
+    for w in words1:
+        if w in words2: matches += 1
+    return matches / len(words1)
+
+
 def approximate_match(src_file, dst_file):
     src_file, src_version = get_version(src_file)
     dst_file, dst_version = get_version(dst_file)
 
-    src_file = fix_filename(src_file)
-    dst_file = fix_filename(dst_file)
-
-    if (src_file in dst_file or dst_file in src_file) and src_version == dst_version:
+    src_file_f = fix_filename(src_file)
+    dst_file_f = fix_filename(dst_file)
+    if (src_file_f in dst_file_f or dst_file_f in src_file_f) and src_version == dst_version:
+        return True
+    if score_match(src_file, dst_file) > 0.6 and src_version == dst_version:
         return True
     return False
+
 
 # Returns (match, name1, name2, same_name, same_content, size1, size2)
 def diff_file(src_file, dst_file, src, dst):
@@ -93,10 +121,10 @@ def diff_file(src_file, dst_file, src, dst):
         if filecmp.cmp(src_path,dst_path, shallow=False):
             return (True, src_file, dst_file, same_name, True, src_size, dst_size)
     
-    if extension(src_file) == 'zip' or extension(dst_file) == 'zip':
-        if extension(src_file) == 'zip':
+    if get_ext(src_file) == 'zip' or get_ext(dst_file) == 'zip':
+        if get_ext(src_file) == 'zip':
             src_path, src_size = extract_zip(src_path, 'src')
-        if extension(dst_file) == 'zip':
+        if get_ext(dst_file) == 'zip':
             dst_path, dst_size = extract_zip(dst_path, 'dst')
         if src_path != '' and dst_path != '':
             same = src_size == dst_size and filecmp.cmp(src_path,dst_path, shallow=False)
@@ -174,6 +202,45 @@ def replace(dir, org, new, ext):
             print(filename,'->', filename_new)
             os.rename(pathname, pathname_new)
 
+def rename(dir, names_file, ext):
+    files = listfiles(dir, ext)
+    with open(names_file, 'r') as f:
+        names = f.read().splitlines()
+    
+    for filename in files:
+        if no_ext(filename) in names:
+            print('No change:',filename)
+            continue
+        else:
+            matches = []
+            for name in names:
+                name_w_ext = name + '.' + get_ext(filename)
+                if approximate_match(filename, name_w_ext):
+                    matches.append(name_w_ext)
+            if len(matches) == 0:     
+                print('Unable to match:',filename)
+                filename_new = input(f'Enter filename. [blank for no action, x=delete]:')
+            else:
+                print('Suggested:',filename)
+                for i, match in enumerate(matches):
+                    print(f'[{i + 1}]   {match}')
+                filename_new = input(f'Select option, enter filename [blank for no action, x=delete]:')
+                print(filename_new)
+                if filename_new.isnumeric() and int(filename_new) < (len(matches) + 1):
+                    filename_new = matches[int(filename_new) - 1]
+            if filename_new == 'x':
+                print('Deleted', filename)
+                os.remove(os.path.join(dir,filename))
+            elif filename_new != '':
+                if get_ext(filename_new).lower() != get_ext(filename).lower():
+                    print(filename_new, 'is not a valid filename')
+                else:
+                    pathname = os.path.join(dir,filename)
+                    pathname_new = os.path.join(dir,filename_new)
+                    print(filename,'->', filename_new)
+                    os.rename(pathname, pathname_new)
+        print()
+
 # Extract file from zip return (extracted_file_path, size)
 # Only works for zip files containing 1 file
 def extract_zip(path, unzip_path = ''):
@@ -194,8 +261,8 @@ def zip(dir, ext, delete):
     files = listfiles(dir, ext)
 
     for filename in files:
-        if extension(filename) != 'zip':
-            zip_filename = os.path.splitext(filename)[0]+'.zip'
+        if get_ext(filename) != 'zip':
+            zip_filename = no_ext(filename) + '.zip'
             pathname = os.path.join(dir,filename)
             pathname_zip = os.path.join(dir,zip_filename)
             if not os.path.exists(pathname_zip):
@@ -255,9 +322,9 @@ def img(dir, img, romext, imgext, summary):
     rom_files = listfiles(dir, romext)
     img_files = listfiles(img, imgext)
     if romext == '*':
-        rom_files = list(filter(lambda x: extension(x) not in img_extensions, rom_files))
+        rom_files = list(filter(lambda x: get_ext(x) not in img_extensions, rom_files))
     if imgext == '*':
-        img_files = list(filter(lambda x: extension(x) in img_extensions, img_files))
+        img_files = list(filter(lambda x: get_ext(x) in img_extensions, img_files))
     rom_img_match = list(filter(lambda x: no_ext_cmp(x, img_files), rom_files))
     rom_img_no_match = list(filter(lambda x: not no_ext_cmp(x, img_files), rom_files))
     img_rom_no_match = list(filter(lambda x: not no_ext_cmp(x, rom_files), img_files))
@@ -310,6 +377,11 @@ def main():
     rep_parser.add_argument('new', help='To string')
     rep_parser.add_argument('-e', '--ext', help='Extension', default='*')
 
+    rename_parser = subparsers.add_parser('rename', help='Rename files base on allwed names')
+    rename_parser.add_argument('dir', help='Directory')
+    rename_parser.add_argument('names', help='Text file with allowed names separated with new line')
+    rename_parser.add_argument('-e', '--ext', help='Extension', default='*')
+
     zip_parser = subparsers.add_parser('zip', help='Zip all files in directory')
     zip_parser.add_argument('dir', help='Directory')
     zip_parser.add_argument('-e', '--ext', help='Extension', default='*')
@@ -328,7 +400,9 @@ def main():
     elif args['cmd'] == 'dup': 
         dup(args['dir'], args['ext'], args['del'], args['identical'])   
     elif args['cmd'] == 'rep': 
-        replace(args['dir'], args['org'], args['new'], args['ext'])  
+        replace(args['dir'], args['org'], args['new'], args['ext']) 
+    elif args['cmd'] == 'rename': 
+        rename(args['dir'], args['names'], args['ext'])    
     elif args['cmd'] == 'zip': 
         zip(args['dir'], args['ext'], args['del'])     
     elif args['cmd'] == 'unzip': 
