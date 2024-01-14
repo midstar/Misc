@@ -316,7 +316,7 @@ def no_ext_cmp(file, files):
         if file == os.path.splitext(file2)[0]: return True
     return False
 
-def img(dir, img, romext, imgext, summary):
+def img(dir, img, romext, imgext, summary, movedir):
     img_extensions = ['jpg', 'jpeg', 'gif', 'tiff', 'png', 'bmp']
     if img == '*' : img = dir
     rom_files = listfiles(dir, romext)
@@ -329,17 +329,26 @@ def img(dir, img, romext, imgext, summary):
     rom_img_no_match = list(filter(lambda x: not no_ext_cmp(x, img_files), rom_files))
     img_rom_no_match = list(filter(lambda x: not no_ext_cmp(x, rom_files), img_files))
 
+
     print('Nbr of roms with matching image:   ', len(rom_img_match))
     print()
     print('Nbr of roms with no matching image:', len(rom_img_no_match))
     if not summary:
-        for rom in rom_img_no_match:
-            print('   ', rom)
+        for rom in rom_img_no_match: print('   ', rom)
     print()
     print('Nbr of images with no matching rom:', len(img_rom_no_match))
     if not summary:
-        for img in img_rom_no_match:
-            print('   ', img)
+        for img in img_rom_no_match: print('   ', img)
+    
+    if movedir != '':
+        if not os.path.exists(movedir):
+            print(f'Error! Path "{movedir}" do not exist')
+        else:
+            for rom in rom_img_no_match: 
+                path_src = os.path.join(dir,rom)
+                path_dst = os.path.join(movedir,rom)
+                print('->',path_dst)
+                shutil.move(path_src,path_dst)
 
 
 def main():
@@ -370,6 +379,7 @@ def main():
     img_parser.add_argument('-re', '--romext', help='ROM extension', default='*')
     img_parser.add_argument('-ie', '--imgext', help='Image extension', default='*')
     img_parser.add_argument('-s', '--summary', help='Print summary only', action='store_true')
+    img_parser.add_argument('-md', '--movedir', help='Move roms with no image to directory',default='')
 
     rep_parser = subparsers.add_parser('rep', help='Replace strings in file names')
     rep_parser.add_argument('dir', help='Directory')
@@ -408,7 +418,7 @@ def main():
     elif args['cmd'] == 'unzip': 
         unzip(args['dir'], args['del'])   
     elif args['cmd'] == 'img': 
-        img(args['dir'], args['img'], args['romext'], args['imgext'], args['summary'])   
+        img(args['dir'], args['img'], args['romext'], args['imgext'], args['summary'], args['movedir'])   
     else:
         print('Invalid command:', args['cmd'])
 
