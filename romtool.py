@@ -334,11 +334,11 @@ def img(dir, img, romext, imgext, summary, movedir):
     print()
     print('Nbr of roms with no matching image:', len(rom_img_no_match))
     if not summary:
-        for rom in rom_img_no_match: print('   ', rom)
+        for rom in rom_img_no_match: print(rom)
     print()
     print('Nbr of images with no matching rom:', len(img_rom_no_match))
     if not summary:
-        for img in img_rom_no_match: print('   ', img)
+        for img in img_rom_no_match: print(img)
     
     if movedir != '':
         if not os.path.exists(movedir):
