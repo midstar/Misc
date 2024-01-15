@@ -167,7 +167,7 @@ def dup(dir, ext, delete_similar, same_content):
     files = listfiles(dir, ext)
 
     while files:
-        file = files.pop()
+        file = files.pop(0)
         for file2 in files:
             diff_res = diff_file(file, file2, dir, dir)
             if diff_res[0] and (same_content == False or diff_res[4]):
@@ -321,6 +321,7 @@ def img(dir, img, romext, imgext, summary, movedir):
     if img == '*' : img = dir
     rom_files = listfiles(dir, romext)
     img_files = listfiles(img, imgext)
+
     if romext == '*':
         rom_files = list(filter(lambda x: get_ext(x) not in img_extensions, rom_files))
     if imgext == '*':
