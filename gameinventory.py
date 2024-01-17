@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import argparse, os
 
 ext = ['zip', 'bin', 'chd', 'p8', 'pbp', 'bin', 'm3u']
@@ -55,13 +57,28 @@ emulators = {
     'WS' : 'Bandai WonderSwan & Color'
 }
 
+def remove_brackets(filename,start,stop):
+    while start in filename and stop in filename:
+        start_i = filename.index(start)
+        stop_i  = filename.index(stop)
+        if stop_i < start_i:
+            break
+        filename = filename[:start_i] + filename[stop_i + 1:]
+    return filename
+
+def remove_meta(game_name):
+    for start, stop in [('(',')'),('[',']'),('<','>')]:
+        game_name = remove_brackets(game_name, start, stop)
+
+    return game_name.strip()
+
 def main():
     parser = argparse.ArgumentParser(description='Inventory of games')
     parser.add_argument('dir', help='Root directory')
     args = vars(parser.parse_args())
 
     games = {}
-    
+    total = 0
     for root, _, files in os.walk(args['dir']):
         if 'Imgs/' in root:
             continue # Sort of hacky
@@ -69,13 +86,45 @@ def main():
         if dir in emulators:
             for filename in files:
                 if os.path.splitext(filename)[1][1:].lower() in ext:
-                    game_name = os.path.splitext(filename)[0]
+                    total += 1
+                    game_name = remove_meta(os.path.splitext(filename)[0])
                     if game_name not in games:
                         games[game_name] = set()
                     games[game_name].add(dir)
-                else:
-                    print('Ignoring file', filename)
             
+    used_emulators = []        
+    print('----------------------------------------------------------------------------')
+    print('                                  SUMMARY                                   ')
+    print('----------------------------------------------------------------------------')
+    print('Total number of games: ', total)
+    print('Total number of titles:', len(games.keys()))
+    print()
+    for emulator, emulator_name in sorted(emulators.items(), key=lambda x: x[1]):
+        nbr_games = 0
+        for game, for_emulator in games.items():
+            if emulator in for_emulator: nbr_games += 1
+        if nbr_games > 0: 
+            used_emulators.append(emulator)
+            print(f'{emulator_name}:', nbr_games)
+
+    print('')
+    print('----------------------------------------------------------------------------')
+    print('                               ALL GAMES                                    ')
+    print('----------------------------------------------------------------------------')
+    for game, for_emulator in sorted(games.items(), key=lambda x: x[0].lower()):
+        emulator_names = []
+        for emulator in for_emulator: emulator_names.append(emulators[emulator])
+        emulator_names.sort()
+        print(f'{game :60}  ({" / ".join(emulator_names)})')
+    
+    for emulator in used_emulators:
+        print('')
+        print('----------------------------------------------------------------------------')
+        print(emulators[emulator])
+        print('----------------------------------------------------------------------------')  
+        for game, for_emulator in sorted(games.items(), key=lambda x: x[0].lower()):
+            if emulator in for_emulator:
+                print(game)
 
 if __name__ == '__main__':
     main()    
