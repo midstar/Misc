@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
 from tkinter import font
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
@@ -25,7 +26,11 @@ def cb_select_dst():
     if dst_path != '' :  str_dst.set(dst_path)
 
 def cb_run_stop():
+    if str_src.get() == '' or str_dst.get() == '':
+        messagebox.showerror(title='Error', message='Invalid source or dest')
+        return
     btn_run_stop.config(text="Stop")
+    lbl_total_val.config(text="100000")
     pass
 
 
@@ -55,6 +60,34 @@ btn_select_dst.place(x=975,y=42)
 fnt_large = font.Font(family='Helvetica', size=26, weight=font.BOLD)
 btn_run_stop = Button(root, text ="Run", command = cb_run_stop, font=fnt_large, width=5)
 btn_run_stop.place(x=1070,y=10)
+
+# Stats
+fnt_small = font.Font(family='Helvetica', size=8)
+
+lbl_total = Label(root, text ="Total:", font=fnt_small) 
+lbl_total.place(x=1260,y=2)
+lbl_total_val = Label(root, text ="0", font=fnt_small) 
+lbl_total_val.place(x=1310,y=2)
+
+lbl_left = Label(root, text ="Left:", font=fnt_small) 
+lbl_left.place(x=1260,y=18)
+lbl_left_val = Label(root, text ="0", font=fnt_small) 
+lbl_left_val.place(x=1310,y=18)
+
+lbl_copied = Label(root, text ="Copied:", font=fnt_small) 
+lbl_copied.place(x=1260,y=34)
+lbl_copied_val = Label(root, text ="0", font=fnt_small) 
+lbl_copied_val.place(x=1310,y=34)
+
+lbl_copied = Label(root, text ="Existed:", font=fnt_small) 
+lbl_copied.place(x=1260,y=50)
+lbl_copied_val = Label(root, text ="0", font=fnt_small) 
+lbl_copied_val.place(x=1310,y=50)
+
+lbl_failed = Label(root, text ="Failed:", font=fnt_small) 
+lbl_failed.place(x=1260,y=66)
+lbl_failed_val = Label(root, text ="0", font=fnt_small) 
+lbl_failed_val.place(x=1310,y=66)
 
 # Progress bar
 progressbar = ttk.Progressbar()
