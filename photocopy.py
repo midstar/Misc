@@ -2,22 +2,81 @@
 
 import argparse, os, sys, datetime, shutil
 
-month_to_path = {
-    1 : '01 Januari',
-    2 : '02 Februari',
-    3 : '03 Mars',
-    4 : '04 April',
-    5 : '05 Maj',
-    6 : '06 Juni',
-    7 : '07 Juli',
-    8 : '08 Augusti',
-    9 : '09 September',
-    10: '10 Oktober',
-    11: '11 November',
-    12: '12 December'
-}
 
-class progressBar:
+
+class PhotoCopy:
+    month_to_path = {
+        1 : '01 Januari',
+        2 : '02 Februari',
+        3 : '03 Mars',
+        4 : '04 April',
+        5 : '05 Maj',
+        6 : '06 Juni',
+        7 : '07 Juli',
+        8 : '08 Augusti',
+        9 : '09 September',
+        10: '10 Oktober',
+        11: '11 November',
+        12: '12 December'
+    }
+
+    # Status constants
+    STAT_COPY     = 'Copied'
+    STAT_EXISTED  = 'Already Existed'
+    STAT_FAILED   = 'Failed'
+    STAT_FINISHED = 'Finished'
+
+    def __init__(self, src, dst):
+        self.src = src
+        self.dst = dst
+
+        # Stats
+        self.success = []
+        self.already_existed = []
+        self.failed = []    
+        self.last_error = None
+
+        # Save all files to copy and figure out destination path
+        self.src_paths = []
+        self.dst_paths = {} # Keyed on src_path
+        for root,subdirs,files in os.walk(src):
+            for file in files:
+                src_path = os.path.join(root,file)
+                self.src_paths.append(src_path)
+
+                # Figure out dst path
+                ctime = os.path.getctime(src_path)
+                cdt = datetime.datetime.fromtimestamp(ctime)
+                dst_path = os.path.join(dst, str(cdt.year), self.month_to_path[cdt.month], file)
+                self.dst_paths[src_path] = dst_path
+        
+        # Sort and set index
+        self.src_paths.sort()
+        self.index = 0
+    
+    def copy_next(self):
+        if self.index >= len(self.src_paths):
+            return PhotoCopy.STAT_FINISHED
+
+        src_path = self.src_paths[self.index]
+        self.index += 1
+        dst_path = self.dst_paths[src_path]
+        if os.path.isfile(dst_path):
+            self.already_existed.append(dst_path)
+            return PhotoCopy.STAT_EXISTED
+        else:
+            try:
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                shutil.copy2(src_path, dst_path)
+                self.success.append(dst_path)
+                return PhotoCopy.STAT_COPY
+            except Exception as e:
+                self.failed.append(dst_path)
+                self.last_error = e
+                print(e)
+                return PhotoCopy.STAT_FAILED
+
+class ProgressBar:
     def __init__(self, max_value):
         steps = 7 * 10
         self.step_size = max_value / steps
@@ -42,53 +101,29 @@ def main():
     parser.add_argument('dst', help='Destination directory')
     args = vars(parser.parse_args())
 
-    # Save all files to copy
-    src_paths = []
-    for root,subdirs,files in os.walk(args['src']):
-        for file in files:
-            src_paths.append(os.path.join(root,file))
+    pc = PhotoCopy(args['src'], args['dst'])
 
     # Setup progress bar
-    nbr_files = len(src_paths)
+    nbr_files = len(pc.src_paths)
     if nbr_files == 0:
         print('No files found to copy')
         exit(0)
     print('Files to copy:', nbr_files)  
     print()  
-    progress_bar = progressBar(nbr_files)
-
-    # Some stats
-    success = []
-    already_existed = []
-    failed = []
+    progress_bar = ProgressBar(nbr_files)
 
     # Start copy
-    for idx, src_path in enumerate(src_paths):
-        ctime = os.path.getctime(src_path)
-        cdt = datetime.datetime.fromtimestamp(ctime)
-        src_file = os.path.split(src_path)[1]
-
-        dst_path = os.path.join(args['dst'], str(cdt.year), month_to_path[cdt.month], src_file)
-        if os.path.isfile(dst_path):
-            already_existed.append(dst_path)
-        else:
-            try:
-                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-                shutil.copy2(src_path, dst_path)
-                success.append(dst_path)
-            except Exception as e:
-                failed.append(dst_path)
-
-        progress_bar.update(idx + 1)
+    while pc.copy_next() != PhotoCopy.STAT_FINISHED:
+        progress_bar.update(pc.index)
 
     # Summarize result
     print()
     print()
-    print(f'{len(success)} of {nbr_files} files copied')
-    if (len(already_existed) > 0):
-        print(f'{len(already_existed)} of {nbr_files} files already existed')
-    if (len(failed) > 0):
-        print(f'{len(failed)} of {nbr_files} files failed')
+    print(f'{len(pc.success)} of {nbr_files} files copied')
+    if (len(pc.already_existed) > 0):
+        print(f'{len(pc.already_existed)} of {nbr_files} files already existed')
+    if (len(pc.failed) > 0):
+        print(f'{len(pc.failed)} of {nbr_files} files failed')
 
     full_report = input('View full report? [y/N]: ') 
     if full_report.lower() == 'y':
@@ -96,19 +131,19 @@ def main():
         print('-------------------------------------------------------------------------------')
         print('|                                FILES COPIED                                  |')
         print('-------------------------------------------------------------------------------')
-        for file in sorted(success):
+        for file in sorted(pc.success):
             print(file)
         print()
         print('-------------------------------------------------------------------------------')
         print('|                           FILES ALREADY EXISTED                              |')
         print('-------------------------------------------------------------------------------')
-        for file in sorted(already_existed):
+        for file in sorted(pc.already_existed):
             print(file)
         print()
         print('-------------------------------------------------------------------------------')
         print('|                                FILES FAILED                                 |')
         print('-------------------------------------------------------------------------------')
-        for file in sorted(failed):
+        for file in sorted(pc.failed):
             print(file)
 
 
