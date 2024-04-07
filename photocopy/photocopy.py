@@ -45,7 +45,7 @@ class PhotoCopy:
                 self.src_paths.append(src_path)
 
                 # Figure out dst path
-                ctime = os.path.getctime(src_path)
+                ctime = os.path.getmtime(src_path)
                 cdt = datetime.datetime.fromtimestamp(ctime)
                 dst_path = os.path.join(dst, str(cdt.year), self.month_to_path[cdt.month], file)
                 self.dst_paths[src_path] = dst_path
