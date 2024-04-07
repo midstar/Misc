@@ -16,14 +16,17 @@ root = Tk()
 
 ###############################################################################
 # Globals
+
 str_src = StringVar()
 str_dst = StringVar()
 progress = IntVar()
 running = False
 pc = None
+thread = None
 
 ###############################################################################
 # Helpers
+
 def update_stats():
     if pc == None:
         return
@@ -39,6 +42,7 @@ def update_stats():
 
 ###############################################################################
 # Call backs
+
 def cb_select_src():
     src_path = filedialog.askdirectory(title = 'Source directory')
     if src_path != '' : str_src.set(src_path)
@@ -50,27 +54,38 @@ def cb_select_dst():
 def cb_run_stop():
     global pc
     global running
+    global thread
     if running:
-        btn_run_stop.config(text="Run")
-        running = False
+        running = False # Thread will die
         return
 
     if str_src.get() == '' or str_dst.get() == '':
         messagebox.showerror(title='Error', message='Invalid source or dest')
         return
 
+    btn_run_stop.config(text="Stop")
     pc = PhotoCopy(str_src.get(), str_dst.get())
     update_stats()
-
-    btn_run_stop.config(text="Stop")
     running = True
-    pass
+    thread = threading.Thread(target=thrd_copy)
+    thread.start()
 
 ###############################################################################
 # Threads
 
+def thrd_copy():
+    global pc
+    global running
+
+    while running and pc.copy_next() != PhotoCopy.STAT_FINISHED:
+        update_stats()
+
+    btn_run_stop.config(text="Run")
+    running = False
+    
+
 ###############################################################################
-# Main program
+# UI Setup
 
 root.geometry("1400x700")
 root.title("Photo Copy")
