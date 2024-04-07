@@ -66,6 +66,7 @@ def cb_run_stop():
     btn_run_stop.config(text="Stop")
     pc = PhotoCopy(str_src.get(), str_dst.get())
     update_stats()
+    scr_text.delete('1.0', END)
     running = True
     thread = threading.Thread(target=thrd_copy)
     thread.start()
@@ -79,10 +80,19 @@ def thrd_copy():
 
     while running:
         src_path, dst_path = pc.get_next_file()
-        scr_text.insert(INSERT, f'{src_path} > {dst_path}\n')
+        if src_path != '':
+            scr_text.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+        scr_text.see(END)
         status = pc.copy_next()
         if status == PhotoCopy.STAT_FINISHED:
             break # We are done
+        color = 'green'
+        if status == PhotoCopy.STAT_EXISTED:
+            color = 'yellow'
+        elif status == PhotoCopy.STAT_FAILED:
+            scr_text.insert(INSERT, f'  {pc.last_error}\n', src_path)
+            color = 'red'
+        scr_text.tag_config(src_path, foreground=color)
         update_stats()
 
     btn_run_stop.config(text="Run")
