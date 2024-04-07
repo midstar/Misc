@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
+from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
 ###############################################################################
@@ -53,7 +54,12 @@ btn_select_dst.place(x=975,y=42)
 # Run / stop button
 fnt_large = font.Font(family='Helvetica', size=26, weight=font.BOLD)
 btn_run_stop = Button(root, text ="Run", command = cb_run_stop, font=fnt_large, width=5)
-btn_run_stop.place(x=1100,y=10)
+btn_run_stop.place(x=1070,y=10)
+
+# Progress bar
+progressbar = ttk.Progressbar()
+progressbar.place(x=5, y=90, width=1390)
+progressbar.step(73)
 
 # Status text entry
 scr_text = ScrolledText(root, width=137, height=25)
