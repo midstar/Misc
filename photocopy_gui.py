@@ -77,7 +77,12 @@ def thrd_copy():
     global pc
     global running
 
-    while running and pc.copy_next() != PhotoCopy.STAT_FINISHED:
+    while running:
+        src_path, dst_path = pc.get_next_file()
+        scr_text.insert(INSERT, f'{src_path} > {dst_path}\n')
+        status = pc.copy_next()
+        if status == PhotoCopy.STAT_FINISHED:
+            break # We are done
         update_stats()
 
     btn_run_stop.config(text="Run")
@@ -146,7 +151,5 @@ progressbar.place(x=5, y=90, width=1390)
 # Status text entry
 scr_text = ScrolledText(root, width=137, height=25)
 scr_text.place(x=5, y=110)
-scr_text.insert(INSERT, 'First row\n')
-scr_text.insert(INSERT, 'Second row\n')
 
 root.mainloop()     

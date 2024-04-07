@@ -54,6 +54,18 @@ class PhotoCopy:
         self.src_paths.sort()
         self.index = 0
     
+    def get_next_file(self, remove_src_dst = True):
+        if self.index >= len(self.src_paths):
+            return ('','')
+        src_path = self.src_paths[self.index]
+        dst_path = self.dst_paths[src_path]
+        if remove_src_dst:
+            if src_path.startswith(self.src):
+                src_path = src_path[len(self.src) + 1:]
+            if dst_path.startswith(self.dst):
+                dst_path = dst_path[len(self.dst) + 1:]
+        return (src_path, dst_path)
+    
     def copy_next(self):
         if self.index >= len(self.src_paths):
             return PhotoCopy.STAT_FINISHED
