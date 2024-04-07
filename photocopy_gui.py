@@ -5,6 +5,10 @@ from tkinter import font
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
+from photocopy import PhotoCopy
+
+import threading
+
 ###############################################################################
 # Create root
 
@@ -14,6 +18,24 @@ root = Tk()
 # Globals
 str_src = StringVar()
 str_dst = StringVar()
+progress = IntVar()
+running = False
+pc = None
+
+###############################################################################
+# Helpers
+def update_stats():
+    if pc == None:
+        return
+    
+    lbl_total_val.config(text=str(len(pc.src_paths)))
+    lbl_left_val.config(text=str(pc.files_left()))
+    lbl_copied_val.config(text=str(len(pc.success)))
+    lbl_existed_val.config(text=str(len(pc.already_existed)))
+    lbl_failed_val.config(text=str(len(pc.failed)))
+
+    progress.set(pc.get_progress())
+    root.update()
 
 ###############################################################################
 # Call backs
@@ -26,13 +48,26 @@ def cb_select_dst():
     if dst_path != '' :  str_dst.set(dst_path)
 
 def cb_run_stop():
+    global pc
+    global running
+    if running:
+        btn_run_stop.config(text="Run")
+        running = False
+        return
+
     if str_src.get() == '' or str_dst.get() == '':
         messagebox.showerror(title='Error', message='Invalid source or dest')
         return
+
+    pc = PhotoCopy(str_src.get(), str_dst.get())
+    update_stats()
+
     btn_run_stop.config(text="Stop")
-    lbl_total_val.config(text="100000")
+    running = True
     pass
 
+###############################################################################
+# Threads
 
 ###############################################################################
 # Main program
@@ -79,10 +114,10 @@ lbl_copied.place(x=1260,y=34)
 lbl_copied_val = Label(root, text ="0", font=fnt_small) 
 lbl_copied_val.place(x=1310,y=34)
 
-lbl_copied = Label(root, text ="Existed:", font=fnt_small) 
-lbl_copied.place(x=1260,y=50)
-lbl_copied_val = Label(root, text ="0", font=fnt_small) 
-lbl_copied_val.place(x=1310,y=50)
+lbl_existed = Label(root, text ="Existed:", font=fnt_small) 
+lbl_existed.place(x=1260,y=50)
+lbl_existed_val = Label(root, text ="0", font=fnt_small) 
+lbl_existed_val.place(x=1310,y=50)
 
 lbl_failed = Label(root, text ="Failed:", font=fnt_small) 
 lbl_failed.place(x=1260,y=66)
@@ -90,9 +125,8 @@ lbl_failed_val = Label(root, text ="0", font=fnt_small)
 lbl_failed_val.place(x=1310,y=66)
 
 # Progress bar
-progressbar = ttk.Progressbar()
+progressbar = ttk.Progressbar(variable = progress)
 progressbar.place(x=5, y=90, width=1390)
-progressbar.step(73)
 
 # Status text entry
 scr_text = ScrolledText(root, width=137, height=25)
