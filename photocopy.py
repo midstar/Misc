@@ -75,9 +75,16 @@ class PhotoCopy:
                 self.last_error = e
                 print(e)
                 return PhotoCopy.STAT_FAILED
+    
+    # Value between 0 - 100
+    def get_progress(self):
+        max = len(self.src_paths)
+        if max == 0:
+            return 100
+        return int((self.index / max) * 100.0)
 
 class ProgressBar:
-    def __init__(self, max_value):
+    def __init__(self, max_value = 100):
         steps = 7 * 10
         self.step_size = max_value / steps
         self.step_current = 0
@@ -105,16 +112,16 @@ def main():
 
     # Setup progress bar
     nbr_files = len(pc.src_paths)
-    if nbr_files == 0:
-        print('No files found to copy')
-        exit(0)
+    #if nbr_files == 0:
+    #    print('No files found to copy')
+    #    exit(0)
     print('Files to copy:', nbr_files)  
     print()  
-    progress_bar = ProgressBar(nbr_files)
+    progress_bar = ProgressBar()
 
     # Start copy
     while pc.copy_next() != PhotoCopy.STAT_FINISHED:
-        progress_bar.update(pc.index)
+        progress_bar.update(pc.get_progress())
 
     # Summarize result
     print()
