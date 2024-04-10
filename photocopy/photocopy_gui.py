@@ -66,7 +66,10 @@ def cb_run_stop():
     btn_run_stop.config(text="Stop")
     pc = PhotoCopy(str_src.get(), str_dst.get())
     update_stats()
-    scr_text.delete('1.0', END)
+    src_all.delete('1.0', END)
+    src_copied.delete('1.0', END)
+    src_existed.delete('1.0', END)
+    src_failed.delete('1.0', END)
     running = True
     thread = threading.Thread(target=thrd_copy)
     thread.start()
@@ -81,18 +84,31 @@ def thrd_copy():
     while running:
         src_path, dst_path = pc.get_next_file()
         if src_path != '':
-            scr_text.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
-        scr_text.see(END)
+            src_all.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+        src_all.see(END)
         status = pc.copy_next()
         if status == PhotoCopy.STAT_FINISHED:
             break # We are done
-        color = 'green'
         if status == PhotoCopy.STAT_EXISTED:
-            color = 'yellow'
+            src_existed.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+            src_existed.see(END)
+            color = 'blue'
         elif status == PhotoCopy.STAT_FAILED:
-            scr_text.insert(INSERT, f'  {pc.last_error}\n', src_path)
+            src_failed.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+            src_failed.insert(INSERT, f'  {pc.last_error}\n', src_path)
+            src_failed.see(END)
+            src_all.insert(INSERT, f'  {pc.last_error}\n', src_path)
+            src_all.see(END)
             color = 'red'
-        scr_text.tag_config(src_path, foreground=color)
+        else:
+            src_copied.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+            src_copied.see(END)
+            color = 'green'
+
+        src_all.tag_config(src_path, foreground=color)
+        src_copied.tag_config(src_path, foreground=color)
+        src_existed.tag_config(src_path, foreground=color)
+        src_failed.tag_config(src_path, foreground=color)
         update_stats()
 
     btn_run_stop.config(text="Run")
@@ -195,8 +211,29 @@ lbl_failed_val.pack(side=RIGHT)
 progressbar = ttk.Progressbar(variable = progress)
 progressbar.pack(fill=X, padx = 5, pady = 5)
 
-# Status text entry
-scr_text = ScrolledText(root)
-scr_text.pack(fill=BOTH, expand = True)
+# Status log entries
+tab_parent = ttk.Notebook(root)
+tab_all = ttk.Frame(tab_parent)
+tab_copied = ttk.Frame(tab_parent)
+tab_existed= ttk.Frame(tab_parent)
+tab_failed = ttk.Frame(tab_parent)
+tab_parent.add(tab_all, text="All")
+tab_parent.add(tab_copied, text="Copied")
+tab_parent.add(tab_existed, text="Already existed")
+tab_parent.add(tab_failed, text="Failed")
+
+src_all = ScrolledText(tab_all)
+src_all.pack(fill=BOTH, expand = True)
+
+src_copied = ScrolledText(tab_copied)
+src_copied.pack(fill=BOTH, expand = True)
+
+src_existed = ScrolledText(tab_existed)
+src_existed.pack(fill=BOTH, expand = True)
+
+src_failed = ScrolledText(tab_failed)
+src_failed.pack(fill=BOTH, expand = True)
+
+tab_parent.pack(fill=BOTH, expand = True)
 
 root.mainloop()     
