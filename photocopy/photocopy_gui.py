@@ -72,6 +72,7 @@ def cb_run_stop():
     global start_time
     if running:
         running = False # Thread will die
+        btn_run_stop.config(text='Wait')
         return
 
     if str_src.get() == '' or str_dst.get() == '':
