@@ -83,32 +83,33 @@ def thrd_copy():
 
     while running:
         src_path, dst_path = pc.get_next_file()
+        tag = str(hash(src_path))
         if src_path != '':
-            src_all.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+            src_all.insert(INSERT, f'{src_path} > {dst_path}\n', tag)
         src_all.see(END)
         status = pc.copy_next()
         if status == PhotoCopy.STAT_FINISHED:
             break # We are done
         if status == PhotoCopy.STAT_EXISTED:
-            src_existed.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+            src_existed.insert(INSERT, f'{src_path} > {dst_path}\n', tag)
             src_existed.see(END)
             color = 'blue'
         elif status == PhotoCopy.STAT_FAILED:
-            src_failed.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
-            src_failed.insert(INSERT, f'  {pc.last_error}\n', src_path)
+            src_failed.insert(INSERT, f'{src_path} > {dst_path}\n', tag)
+            src_failed.insert(INSERT, f'  {pc.last_error}\n', tag)
             src_failed.see(END)
-            src_all.insert(INSERT, f'  {pc.last_error}\n', src_path)
+            src_all.insert(INSERT, f'  {pc.last_error}\n', tag)
             src_all.see(END)
             color = 'red'
         else:
-            src_copied.insert(INSERT, f'{src_path} > {dst_path}\n', src_path)
+            src_copied.insert(INSERT, f'{src_path} > {dst_path}\n', tag)
             src_copied.see(END)
             color = 'green'
 
-        src_all.tag_config(src_path, foreground=color)
-        src_copied.tag_config(src_path, foreground=color)
-        src_existed.tag_config(src_path, foreground=color)
-        src_failed.tag_config(src_path, foreground=color)
+        src_all.tag_config(tag, foreground=color)
+        src_copied.tag_config(tag, foreground=color)
+        src_existed.tag_config(tag, foreground=color)
+        src_failed.tag_config(tag, foreground=color)
         update_stats()
 
     btn_run_stop.config(text="Run")
