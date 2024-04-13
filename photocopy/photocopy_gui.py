@@ -32,17 +32,17 @@ def update_stats():
     if pc == None:
         return
     
-    lbl_total_val.config(text=str(len(pc.src_paths)))
-    lbl_left_val.config(text=str(pc.files_left()))
-    lbl_copied_val.config(text=str(len(pc.success)))
-    lbl_existed_val.config(text=str(len(pc.already_existed)))
-    lbl_failed_val.config(text=str(len(pc.failed)))
+    lbl_total_val.config(text=str(pc.get_nbr_files()))
+    lbl_left_val.config(text=str(pc.get_nbr_files_left()))
+    lbl_copied_val.config(text=str(pc.get_nbr_copied()))
+    lbl_existed_val.config(text=str(pc.get_nbr_existed()))
+    lbl_failed_val.config(text=str(pc.get_nbr_failed()))
     
     # Estimate remaining time
-    files_done = len(pc.src_paths) -  pc.files_left()
+    files_done = pc.get_nbr_files() -  pc.get_nbr_files_left()
     time_elapsed = time.time() - start_time
     time_per_file = 0 if files_done== 0 else time_elapsed / files_done
-    time_left = time_per_file * pc.files_left()
+    time_left = time_per_file * pc.get_nbr_files_left()
     minutes = 0 if time_left < 60 else int(time_left / 60)
     seconds = int(time_left - minutes * 60)
     if minutes > 0:
@@ -70,6 +70,7 @@ def cb_run_stop():
     global running
     global thread
     global start_time
+
     if running:
         running = False # Thread will die
         btn_run_stop.config(text='Wait')
@@ -79,8 +80,14 @@ def cb_run_stop():
         messagebox.showerror(title='Error', message='Invalid source or dest')
         return
 
-    btn_run_stop.config(text='Stop')
-    pc = PhotoCopy(str_src.get(), str_dst.get())
+    rerun = 'no'
+    if pc != None and pc.get_nbr_failed() > 0:
+        rerun = messagebox.askquestion(title='Rerun failed', message='Do you want to re-run only failed files?')
+
+    if rerun == 'yes':
+        pc.reset_to_failed()
+    else:
+        pc = PhotoCopy(str_src.get(), str_dst.get())
     start_time = time.time()
     update_stats()
     src_all.delete('1.0', END)
@@ -88,6 +95,7 @@ def cb_run_stop():
     src_existed.delete('1.0', END)
     src_failed.delete('1.0', END)
     running = True
+    btn_run_stop.config(text='Stop')
     thread = threading.Thread(target=thrd_copy)
     thread.start()
 
@@ -113,9 +121,9 @@ def thrd_copy():
             color = 'blue'
         elif status == PhotoCopy.STAT_FAILED:
             src_failed.insert(INSERT, f'{src_path} > {dst_path}\n', tag)
-            src_failed.insert(INSERT, f'  {pc.last_error}\n', tag)
+            src_failed.insert(INSERT, f'  {pc.get_last_error()}\n', tag)
             src_failed.see(END)
-            src_all.insert(INSERT, f'  {pc.last_error}\n', tag)
+            src_all.insert(INSERT, f'  {pc.get_last_error()}\n', tag)
             src_all.see(END)
             color = 'red'
         else:
@@ -261,4 +269,4 @@ src_failed.pack(fill=BOTH, expand = True)
 
 tab_parent.pack(fill=BOTH, expand = True)
 
-root.mainloop()     
+root.mainloop()

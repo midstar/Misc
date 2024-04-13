@@ -25,40 +25,83 @@ class PhotoCopy:
     STAT_EXISTED  = 'Already Existed'
     STAT_FAILED   = 'Failed'
     STAT_FINISHED = 'Finished'
+    STAT_UNHANDLED = 'Unhandled' # Only used internally
 
     def __init__(self, src, dst):
         self.src = src
         self.dst = dst
-
-        # Stats
-        self.success = []
-        self.already_existed = []
-        self.failed = []    
-        self.last_error = None
+        self.files = []
 
         # Save all files to copy and figure out destination path
-        self.src_paths = []
-        self.dst_paths = {} # Keyed on src_path
-        for root,subdirs,files in os.walk(src):
+        for root, _ ,files in os.walk(src):
             for file in files:
                 src_path = os.path.join(root,file)
-                self.src_paths.append(src_path)
 
                 # Figure out dst path
                 ctime = os.path.getmtime(src_path)
                 cdt = datetime.datetime.fromtimestamp(ctime)
                 dst_path = os.path.join(dst, str(cdt.year), self.month_to_path[cdt.month], file)
-                self.dst_paths[src_path] = dst_path
+
+                self.files.append({
+                    'src' : src_path,
+                    'dst' : dst_path,
+                    'status' : PhotoCopy.STAT_UNHANDLED
+                })
         
         # Sort and set index
-        self.src_paths.sort()
+        self.files = sorted(self.files, key=lambda x: x['src'])
+
+        # Reset stats - use counters for efficiency
+        self.__reset_stats()
+
+    def __reset_stats(self):
+        self.nbr_files = len(self.files)
+        self.nbr_copied = 0
+        self.nbr_existed = 0
+        self.nbr_failed = 0
         self.index = 0
+        self.last_error = None
+
+    def reset_to_failed(self):
+        ''' Use to retry copy failed files, will set src_paths to faled '''
+        self.files = [d for d in self.files if d['status'] == PhotoCopy.STAT_FAILED]
+        for file in self.files: file['status'] = PhotoCopy.STAT_UNHANDLED
+
+        # Reset stats - use counters for efficiency
+        self.__reset_stats()
+
+    def get_nbr_files(self):
+        return self.nbr_files  
+
+    def get_nbr_files_left(self):
+        return self.nbr_files - self.index
+    
+    def get_nbr_copied(self):
+        return self.nbr_copied
+    
+    def get_nbr_existed(self):
+        return self.nbr_existed
+    
+    def get_nbr_failed(self):
+        return self.nbr_failed 
+    
+    def get_copied_files(self):
+        return [d['src'] for d in self.files if d['status'] == PhotoCopy.STAT_COPY]
+    
+    def get_existed_files(self):
+        return [d['src'] for d in self.files if d['status'] == PhotoCopy.STAT_EXISTED]
+    
+    def get_failed_files(self):
+        return [d['src'] for d in self.files if d['status'] == PhotoCopy.STAT_FAILED]
+    
+    def get_last_error(self):
+        return self.last_error 
     
     def get_next_file(self, remove_src_dst = True):
-        if self.index >= len(self.src_paths):
+        if self.index >= len(self.files):
             return ('','')
-        src_path = self.src_paths[self.index]
-        dst_path = self.dst_paths[src_path]
+        src_path = self.files[self.index]['src']
+        dst_path = self.files[self.index]['dst']
         if remove_src_dst:
             if src_path.startswith(self.src):
                 src_path = src_path[len(self.src) + 1:]
@@ -67,36 +110,34 @@ class PhotoCopy:
         return (src_path, dst_path)
     
     def copy_next(self):
-        if self.index >= len(self.src_paths):
+        if self.index >= self.nbr_files:
             return PhotoCopy.STAT_FINISHED
-
-        src_path = self.src_paths[self.index]
+        
+        f = self.files[self.index]
         self.index += 1
-        dst_path = self.dst_paths[src_path]
-        if os.path.isfile(dst_path):
-            self.already_existed.append(dst_path)
+
+        if os.path.isfile(f['dst']):
+            f['status'] = PhotoCopy.STAT_EXISTED
+            self.nbr_existed += 1
             return PhotoCopy.STAT_EXISTED
         else:
             try:
-                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-                shutil.copy2(src_path, dst_path)
-                self.success.append(dst_path)
+                os.makedirs(os.path.dirname(f['dst']), exist_ok=True)
+                shutil.copy2(f['src'], f['dst'])
+                f['status'] = PhotoCopy.STAT_COPY
+                self.nbr_copied += 1
                 return PhotoCopy.STAT_COPY
             except Exception as e:
-                self.failed.append(dst_path)
+                f['status'] = PhotoCopy.STAT_FAILED
+                self.nbr_failed += 1
                 self.last_error = e
-                print(e)
                 return PhotoCopy.STAT_FAILED
     
-    def files_left(self):
-        return len(self.src_paths) - self.index
-
     # Value between 0 - 100
     def get_progress(self):
-        max = len(self.src_paths)
-        if max == 0:
+        if self.nbr_files == 0:
             return 100
-        return int((self.index / max) * 100.0)
+        return int((self.index / self.nbr_files) * 100.0)
 
 class ProgressBar:
     def __init__(self, max_value = 100):
@@ -125,45 +166,56 @@ def main():
 
     pc = PhotoCopy(args['src'], args['dst'])
 
-    # Setup progress bar
-    nbr_files = len(pc.src_paths)
-    print('Files to copy:', nbr_files)  
-    print()  
-    progress_bar = ProgressBar()
+    while True:
 
-    # Start copy
-    while pc.copy_next() != PhotoCopy.STAT_FINISHED:
-        progress_bar.update(pc.get_progress())
+        # Setup progress bar
+        print('Files to copy:', pc.get_nbr_files())  
+        print()  
+        progress_bar = ProgressBar()
 
-    # Summarize result
-    print()
-    print()
-    print(f'{len(pc.success)} of {nbr_files} files copied')
-    if (len(pc.already_existed) > 0):
-        print(f'{len(pc.already_existed)} of {nbr_files} files already existed')
-    if (len(pc.failed) > 0):
-        print(f'{len(pc.failed)} of {nbr_files} files failed')
+        # Start copy
+        while pc.copy_next() != PhotoCopy.STAT_FINISHED:
+            progress_bar.update(pc.get_progress())
 
-    full_report = input('View full report? [y/N]: ') 
-    if full_report.lower() == 'y':
+        # Summarize result
         print()
-        print('-------------------------------------------------------------------------------')
-        print('|                                FILES COPIED                                  |')
-        print('-------------------------------------------------------------------------------')
-        for file in sorted(pc.success):
-            print(file)
         print()
-        print('-------------------------------------------------------------------------------')
-        print('|                           FILES ALREADY EXISTED                              |')
-        print('-------------------------------------------------------------------------------')
-        for file in sorted(pc.already_existed):
-            print(file)
-        print()
-        print('-------------------------------------------------------------------------------')
-        print('|                                FILES FAILED                                 |')
-        print('-------------------------------------------------------------------------------')
-        for file in sorted(pc.failed):
-            print(file)
+        print(f'{pc.get_nbr_copied()} of {pc.get_nbr_files()} files copied')
+        if (pc.get_nbr_existed() > 0):
+            print(f'{pc.get_nbr_existed()} of {pc.get_nbr_files()} files already existed')
+        if (pc.get_nbr_failed() > 0):
+            print(f'{pc.get_nbr_failed()} of {pc.get_nbr_files()} files failed')
+
+        full_report = input('View full report? [y/N]: ') 
+        if full_report.lower() == 'y':
+            print()
+            print('-------------------------------------------------------------------------------')
+            print('|                                FILES COPIED                                 |')
+            print('-------------------------------------------------------------------------------')
+            for file in sorted(pc.get_copied_files()):
+                print(file)
+            print()
+            print('-------------------------------------------------------------------------------')
+            print('|                           FILES ALREADY EXISTED                             |')
+            print('-------------------------------------------------------------------------------')
+            for file in sorted(pc.get_existed_files()):
+                print(file)
+            print()
+            print('-------------------------------------------------------------------------------')
+            print('|                                FILES FAILED                                 |')
+            print('-------------------------------------------------------------------------------')
+            for file in sorted(pc.get_failed_files()):
+                print(file)
+            print('')
+        
+        exit_loop = True
+        if (pc.get_nbr_failed() > 0):
+            retry_failed = input('Do you want to retry failed files? [y/N]: ') 
+            if retry_failed.lower() == 'y':
+                exit_loop = False
+                pc.reset_to_failed()
+        if exit_loop:
+            break
 
 
 
