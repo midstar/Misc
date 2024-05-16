@@ -38,7 +38,7 @@ sounddevice.play(sound, samplerate=header['SampleRate'])
 
 # Plot audio signal
 plt.title('48KHz_8KHz_48KHz_Sample_48KHz_Mono.wav')
-plt.plot(data['data'])
+plt.plot(sound)
 plt.show()
 
 
