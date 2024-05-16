@@ -1,4 +1,5 @@
-import pycstruct
+import pycstruct, sounddevice, numpy
+import matplotlib.pyplot as plt
 
 # WAV file header
 header_def = pycstruct.StructDef(default_byteorder = 'little')
@@ -30,6 +31,17 @@ with open('48KHz_8KHz_48KHz_Sample_48KHz_Mono.wav', 'rb') as f:
     data_bytes = f.read()
     data = data_def.deserialize(data_bytes)
     print(len(data['data']))
+
+# Play sound
+sound = numpy.array(data['data'], dtype=numpy.uint8)
+sounddevice.play(sound, samplerate=header['SampleRate'])
+
+# Plot audio signal
+plt.title('48KHz_8KHz_48KHz_Sample_48KHz_Mono.wav')
+plt.plot(data['data'])
+plt.show()
+
+
 
 
 
