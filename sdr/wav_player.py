@@ -30,10 +30,12 @@ with open('48KHz_8KHz_48KHz_Sample_48KHz_Mono.wav', 'rb') as f:
     data_def.add('uint' + str(header['BitsPerSample']), 'data', length=nbr_elements)
     data_bytes = f.read()
     data = data_def.deserialize(data_bytes)
-    print(len(data['data']))
+    print('Number of samples:',len(data['data']))
+
+# Convert to numpy array
+sound = numpy.array(data['data'], dtype=numpy.uint8)
 
 # Play sound
-sound = numpy.array(data['data'], dtype=numpy.uint8)
 sounddevice.play(sound, samplerate=header['SampleRate'])
 
 # Plot audio signal
