@@ -23,6 +23,14 @@ def main():
     plt.plot(sound[:args['sample_rate']])
     plt.show()
 
+    # FFT to show the frequency domain
+    plt.title(f"Frequency domain")
+    fft_sound = np.fft.fft(sound)
+    fft_freq = np.fft.fftfreq(n=sound.size, d=1/args['sample_rate'])
+    plt.plot(fft_freq, fft_sound.real)
+    print(fft_freq)
+    plt.show()
+
     
 
         
