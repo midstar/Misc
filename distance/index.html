@@ -6,6 +6,10 @@
     let crd1;
     let crd2;
 
+    let crdRef = {};
+    crdRef.latitude = 59.41078306392151;
+    crdRef.longitude = 17.812243153800683;
+
     function printCoords(crd, elementId) {
         const x = document.getElementById(elementId);
         x.innerHTML = "Latitude: " + crd.latitude +
@@ -16,6 +20,9 @@
     function success(pos) {
         crd = pos.coords;
         printCoords(crd, "coordinate");
+        var d = calcCrow(crd.latitude, crd.longitude, crdRef.latitude, crdRef.longitude);
+        const x = document.getElementById("distref");
+        x.innerHTML = d + " m";
     }
 
     function error(err) {
@@ -72,6 +79,7 @@
 </script>
 <body>
     <div id="coordinate">-</div>
+    <div id="distref" style="font-size: 40px;">-</div>
     <br>
     <button onclick="getCrd1()">Get position 1</button>
     <div id="coordinate1">-</div>
