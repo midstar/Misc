@@ -1,93 +1,130 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta charset="utf-8"/>
 <html>
+<head>
+<title>Club distance</title>
+<style>
+    #reference-container {
+        font-size: 20px;
+    }
+    #course-container {
+        padding-bottom: 10px;
+        display: flex;
+    }
+    #course-container select {
+        font-size: 20px;
+        flex-grow: 1;
+    }
+    #hole-ref-distance-container {
+        display: flex;
+        align-items: center;
+    }
+    #hole-container select {
+        width: 70px;
+        font-size: 35px;
+        text-align: center;
+    }
+    #ref-distance {
+        flex-grow: 1;
+        font-size: 40px;
+        text-align: center;
+    }
+    label {
+        padding-right: 5px;
+    }
+    #club-container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .club {
+        font-size: 25px;
+        width: 75px;
+        height: 75px;
+        margin: 5px;
+        border-width: 2px;
+        border-radius: 10px;
+        border-style: solid;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #stats-button {
+        font-size: 25px;
+        height: 75px;
+        margin: 5px;
+        border-width: 2px;
+        border-radius: 10px;
+        border-style: solid;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        bottom: 0px;
+        left: 0;
+        right: 0;
+    }
+</style>
 <script>
-    let id;
-    let options;
-    let crd;
-    let crd1;
-    let crd2;
-
-    let crdRef = {};
-    crdRef.latitude = 59.41078306392151;
-    crdRef.longitude = 17.812243153800683;
-
-    function printCoords(crd, elementId) {
-        const x = document.getElementById(elementId);
-        x.innerHTML = "Latitude: " + crd.latitude +
-        "<br>Longitude: " + crd.longitude +
-        "<br>Altitude: " + crd.altitude +
-        "<br>Accuracy: " + crd.accuracy;
-    }
-    function success(pos) {
-        crd = pos.coords;
-        printCoords(crd, "coordinate");
-        var d = calcCrow(crd.latitude, crd.longitude, crdRef.latitude, crdRef.longitude);
-        const x = document.getElementById("distref");
-        x.innerHTML = d + " m";
-    }
-
-    function error(err) {
-        console.error(`ERROR(${err.code}): ${err.message}`);
-        const x = document.getElementById("coordinate");
-        x.innerHTML = `ERROR(${err.code}): ${err.message}`;
-    }
-
-    options = {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-    };
-
-    id = navigator.geolocation.watchPosition(success, error, options);
-
-    function getCrd1() {
-        crd1 = crd;
-        printCoords(crd1, "coordinate1");
-    }
-
-    function getCrd2() {
-        crd2 = crd;
-        printCoords(crd2, "coordinate2");
-    }
-
-    function getDistance() {
-        var d = calcCrow(crd1.latitude, crd1.longitude, crd2.latitude, crd2.longitude);
-        const x = document.getElementById("distance");
-        x.innerHTML = d + " m";
-
-    }
-    //This function takes in latitude and longitude of two location and returns the distance between them as the crow flies (in m)
-    function calcCrow(lat1, lon1, lat2, lon2) 
-    {
-      var R = 6371000; // m
-      var dLat = toRad(lat2-lat1);
-      var dLon = toRad(lon2-lon1);
-      var lat1 = toRad(lat1);
-      var lat2 = toRad(lat2);
-
-      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-      var d = R * c;
-      return d;
-    }
-
-    // Converts numeric degrees to radians
-    function toRad(Value) 
-    {
-        return Value * Math.PI / 180;
-    }
 </script>
+</head>
 <body>
-    <div id="coordinate">-</div>
-    <div id="distref" style="font-size: 40px;">-</div>
-    <br>
-    <button onclick="getCrd1()">Get position 1</button>
-    <div id="coordinate1">-</div>
-    <br>
-    <button onclick="getCrd2()">Get position 2</button>
-    <div id="coordinate2">-</div>
-    <br>
-    <button onclick="getDistance()">Get distance</button>
-    <div id="distance">-</div>
+    <div id="reference-container">
+        <div id="course-container">
+            <label for="course">Course:</label>
+            <select name="course" id="course">
+                <option value="viksjo-9">Viksjö 9 hål</option>
+                <option value="viksjo-18">Viksjö 18 hål</option>
+            </select>
+        </div>
+        <div id="hole-ref-distance-container">
+            <div id="hole-container">
+                <label for="hole">Hole:</label>
+                <select name="hole" id="hole">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                    <option value="16">16</option>
+                    <option value="17">17</option>
+                    <option value="18">18</option>
+                </select>
+            </div>
+            <div id="ref-distance">
+                100 m
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div id="club-container">
+        <div class="club">LW</div>
+        <div class="club">SW</div>
+        <div class="club">GW</div>
+        <div class="club">PW</div>
+        <div class="club">9</div>
+        <div class="club">8</div>
+        <div class="club">7</div>
+        <div class="club">6</div>
+        <div class="club">5</div>
+        <div class="club">4</div>
+        <div class="club">3</div>
+        <div class="club">2</div>
+        <div class="club">1</div>
+        <div class="club">5-WD</div>
+        <div class="club">3-WD</div>
+        <div class="club">DRV</div>
+    </div>
+    <div id="stats-button">Statistics</div>
 </body>
 </html>

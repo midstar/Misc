@@ -1,0 +1,93 @@
+<html>
+<script>
+    let id;
+    let options;
+    let crd;
+    let crd1;
+    let crd2;
+
+    let crdRef = {};
+    crdRef.latitude = 59.41078306392151;
+    crdRef.longitude = 17.812243153800683;
+
+    function printCoords(crd, elementId) {
+        const x = document.getElementById(elementId);
+        x.innerHTML = "Latitude: " + crd.latitude +
+        "<br>Longitude: " + crd.longitude +
+        "<br>Altitude: " + crd.altitude +
+        "<br>Accuracy: " + crd.accuracy;
+    }
+    function success(pos) {
+        crd = pos.coords;
+        printCoords(crd, "coordinate");
+        var d = calcCrow(crd.latitude, crd.longitude, crdRef.latitude, crdRef.longitude);
+        const x = document.getElementById("distref");
+        x.innerHTML = d + " m";
+    }
+
+    function error(err) {
+        console.error(`ERROR(${err.code}): ${err.message}`);
+        const x = document.getElementById("coordinate");
+        x.innerHTML = `ERROR(${err.code}): ${err.message}`;
+    }
+
+    options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    };
+
+    id = navigator.geolocation.watchPosition(success, error, options);
+
+    function getCrd1() {
+        crd1 = crd;
+        printCoords(crd1, "coordinate1");
+    }
+
+    function getCrd2() {
+        crd2 = crd;
+        printCoords(crd2, "coordinate2");
+    }
+
+    function getDistance() {
+        var d = calcCrow(crd1.latitude, crd1.longitude, crd2.latitude, crd2.longitude);
+        const x = document.getElementById("distance");
+        x.innerHTML = d + " m";
+
+    }
+    //This function takes in latitude and longitude of two location and returns the distance between them as the crow flies (in m)
+    function calcCrow(lat1, lon1, lat2, lon2) 
+    {
+      var R = 6371000; // m
+      var dLat = toRad(lat2-lat1);
+      var dLon = toRad(lon2-lon1);
+      var lat1 = toRad(lat1);
+      var lat2 = toRad(lat2);
+
+      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      var d = R * c;
+      return d;
+    }
+
+    // Converts numeric degrees to radians
+    function toRad(Value) 
+    {
+        return Value * Math.PI / 180;
+    }
+</script>
+<body>
+    <div id="coordinate">-</div>
+    <div id="distref" style="font-size: 40px;">-</div>
+    <br>
+    <button onclick="getCrd1()">Get position 1</button>
+    <div id="coordinate1">-</div>
+    <br>
+    <button onclick="getCrd2()">Get position 2</button>
+    <div id="coordinate2">-</div>
+    <br>
+    <button onclick="getDistance()">Get distance</button>
+    <div id="distance">-</div>
+</body>
+</html>
