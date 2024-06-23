@@ -4,8 +4,15 @@
 <head>
 <title>Club distance</title>
 <style>
+    body {
+        margin: 0px;
+        padding: 0px;
+    }
     #reference-container {
         font-size: 20px;
+        position:fixed;
+        width: 96%;
+        margin: 2%;
     }
     #course-container {
         padding-bottom: 10px;
@@ -36,6 +43,10 @@
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
+        position:fixed;
+        top:105px;
+        bottom: 90px;
+        background-color: green;
     }
     .club {
         font-size: 25px;
@@ -49,6 +60,13 @@
         align-items: center;
         justify-content: center;
     }
+    #footer-container {
+        width:100%;
+        position:fixed;
+        bottom:0;
+        height:90px;
+        background-color: blue;
+    }
     #stats-button {
         font-size: 25px;
         height: 75px;
@@ -59,10 +77,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        position: absolute;
-        bottom: 0px;
-        left: 0;
-        right: 0;
     }
 </style>
 <script>
@@ -105,8 +119,8 @@
                 100 m
             </div>
         </div>
+        <hr>
     </div>
-    <hr>
     <div id="club-container">
         <div class="club">LW</div>
         <div class="club">SW</div>
@@ -125,6 +139,8 @@
         <div class="club">3-WD</div>
         <div class="club">DRV</div>
     </div>
-    <div id="stats-button">Statistics</div>
+    <div id="footer-container">
+        <div id="stats-button">Statistics</div>
+    </div>
 </body>
 </html>
