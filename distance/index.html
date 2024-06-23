@@ -8,11 +8,22 @@
         margin: 0px;
         padding: 0px;
     }
-    #reference-container {
+    #header-container {
         font-size: 20px;
         position:fixed;
         width: 96%;
         margin: 2%;
+    }
+    #body-container {
+        position:fixed;
+        top:105px;
+        bottom: 70px;
+    }
+    #footer-container {
+        width:100%;
+        position:fixed;
+        bottom:0;
+        height:70px;
     }
     #course-container {
         padding-bottom: 10px;
@@ -43,47 +54,39 @@
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
-        position:fixed;
-        top:105px;
-        bottom: 90px;
-        background-color: green;
+        width: 100%;
+        height: 100%;
+
     }
     .club {
-        font-size: 25px;
-        width: 75px;
-        height: 75px;
+        font-size: 20px;
+        width: 55px;
+        height: 55px;
         margin: 5px;
-        border-width: 2px;
-        border-radius: 10px;
-        border-style: solid;
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-    #footer-container {
-        width:100%;
-        position:fixed;
-        bottom:0;
-        height:90px;
-        background-color: blue;
+        border-width: 2px;
+        border-radius: 10px;
+        border-style: solid;
     }
     #stats-button {
         font-size: 25px;
-        height: 75px;
+        height: 55px;
         margin: 5px;
-        border-width: 2px;
-        border-radius: 10px;
-        border-style: solid;
         display: flex;
         align-items: center;
         justify-content: center;
+        border-width: 2px;
+        border-radius: 10px;
+        border-style: solid;
     }
 </style>
 <script>
 </script>
 </head>
 <body>
-    <div id="reference-container">
+    <div id="header-container">
         <div id="course-container">
             <label for="course">Course:</label>
             <select name="course" id="course">
@@ -121,23 +124,25 @@
         </div>
         <hr>
     </div>
-    <div id="club-container">
-        <div class="club">LW</div>
-        <div class="club">SW</div>
-        <div class="club">GW</div>
-        <div class="club">PW</div>
-        <div class="club">9</div>
-        <div class="club">8</div>
-        <div class="club">7</div>
-        <div class="club">6</div>
-        <div class="club">5</div>
-        <div class="club">4</div>
-        <div class="club">3</div>
-        <div class="club">2</div>
-        <div class="club">1</div>
-        <div class="club">5-WD</div>
-        <div class="club">3-WD</div>
-        <div class="club">DRV</div>
+    <div id="body-container">
+        <div id="club-container">
+            <div class="club">LW</div>
+            <div class="club">SW</div>
+            <div class="club">GW</div>
+            <div class="club">PW</div>
+            <div class="club">9</div>
+            <div class="club">8</div>
+            <div class="club">7</div>
+            <div class="club">6</div>
+            <div class="club">5</div>
+            <div class="club">4</div>
+            <div class="club">3</div>
+            <div class="club">2</div>
+            <div class="club">1</div>
+            <div class="club">5-WD</div>
+            <div class="club">3-WD</div>
+            <div class="club">DRV</div>
+        </div>
     </div>
     <div id="footer-container">
         <div id="stats-button">Statistics</div>
