@@ -94,6 +94,12 @@
         text-align: center;
         margin-top: 30px;
     }
+    #club-distance sub {
+        font-size: 30px;
+    }
+    #club-distance sup {
+        font-size: 30px;
+    }
     #store-distance-button {
         height: 100px;
         font-size: 40px;
@@ -213,13 +219,6 @@
         GLOB_CURRENT.altitude = crd.altitude;
 
         updateDistances();
-
-        /*
-        crd = pos.coords;
-        printCoords(crd, "coordinate");
-        var d = calcCrow(crd.latitude, crd.longitude, crdRef.latitude, crdRef.longitude);
-        const x = document.getElementById("distref");
-        x.innerHTML = d + " m";*/
     }
 
     function posError(err) {
@@ -239,8 +238,17 @@
             }
             if (GLOB_START.lat != undefined) {
                 // Update distance club start position
+                const altDiff = Math.round(GLOB_CURRENT.altitude - GLOB_START.altitude);
+                var altText = "";
+                if (altDiff < 0) {
+                    altText = `<sub>&#8595;${Math.abs(altDiff)} m</sub>`
+                } else {
+                    altText = `<sup>&#8593;${altDiff} m</sup>`
+
+                }
                 const clubDist = calcDist(GLOB_CURRENT, GLOB_START);
-                document.getElementById("club-distance").innerHTML = `${clubDist} m`;
+                document.getElementById("club-distance").innerHTML = `${clubDist} m ${altText}`;
+
             }
         }
     }
