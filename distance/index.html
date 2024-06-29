@@ -113,7 +113,9 @@
 <script src="data.js"></script>
 <script>
     const GLOB_REF = { lat : undefined, long : undefined};
-    const GLOB_START = { lat : undefined, long : undefined, altitude : undefined};
+    const GLOB_START = { club : undefined, timestamp : undefined,
+                         lat : undefined, long : undefined, altitude : undefined};
+    const GLOB_CURRENT = {lat : undefined, long : undefined, altitude : undefined};
 
     window.onload = function() {
         // Hide club tracker
@@ -137,6 +139,14 @@
             elemDiv.innerText = club;
             elemClub.appendChild(elemDiv);
         }
+
+        // Configure and start geolocation tracking
+        options = {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        };
+        navigator.geolocation.watchPosition(posUpdate, posError, options);
     };
 
     function changeCourse() {
@@ -168,12 +178,20 @@
             GLOB_REF.lat  = data["course"][course][hole][0];
             GLOB_REF.long = data["course"][course][hole][1];
         }
+
+        updateDistances();
     }
 
     function markStart(club) {
-        document.getElementById("club-container").style.display = "none";
-        document.getElementById("club-tracker-container").style.display = "block";
-        document.getElementById("club-selected").innerHTML = club;
+        if (GLOB_CURRENT.lat != undefined) {
+            document.getElementById("club-container").style.display = "none";
+            document.getElementById("club-tracker-container").style.display = "block";
+            document.getElementById("club-selected").innerHTML = club;
+            GLOB_START.lat = GLOB_CURRENT.lat;
+            GLOB_START.long = GLOB_CURRENT.long;
+            GLOB_START.altitude = GLOB_CURRENT.altitude;
+            updateDistances();
+        }
     }
 
     function markEnd() {
@@ -184,6 +202,73 @@
     function markCancel() {
         document.getElementById("club-container").style.display = "flex";
         document.getElementById("club-tracker-container").style.display = "none";
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // Geolocation stuff
+    function posUpdate(pos) {
+        const crd = pos.coords;
+        GLOB_CURRENT.lat = crd.latitude;
+        GLOB_CURRENT.long = crd.longitude;
+        GLOB_CURRENT.altitude = crd.altitude;
+
+        updateDistances();
+
+        /*
+        crd = pos.coords;
+        printCoords(crd, "coordinate");
+        var d = calcCrow(crd.latitude, crd.longitude, crdRef.latitude, crdRef.longitude);
+        const x = document.getElementById("distref");
+        x.innerHTML = d + " m";*/
+    }
+
+    function posError(err) {
+        document.getElementById("ref-distance").innerHTML = "ERR";
+        document.getElementById("club-distance").innerHTML = "ERR";
+        GLOB_CURRENT.lat = undefined;
+        GLOB_CURRENT.long = undefined;
+        GLOB_CURRENT.altitude = undefined;
+    }
+
+    function updateDistances() {
+        if (GLOB_CURRENT.lat != undefined) {
+            if (GLOB_REF.lat != undefined) {
+                // Update distance to reference
+                const refDist = calcDist(GLOB_CURRENT, GLOB_REF);
+                document.getElementById("ref-distance").innerHTML = `${refDist} m`;
+            }
+            if (GLOB_START.lat != undefined) {
+                // Update distance club start position
+                const clubDist = calcDist(GLOB_CURRENT, GLOB_START);
+                document.getElementById("club-distance").innerHTML = `${clubDist} m`;
+            }
+        }
+    }
+
+    function calcDist(pos1, pos2) {
+        return calcCrow(pos1.lat, pos1.long, pos2.lat, pos2.long);
+    }
+
+    //This function takes in latitude and longitude of two location and returns the distance between them as the crow flies (in m)
+    function calcCrow(lat1, lon1, lat2, lon2) 
+    {
+      var R = 6371000; // m
+      var dLat = toRad(lat2-lat1);
+      var dLon = toRad(lon2-lon1);
+      var lat1 = toRad(lat1);
+      var lat2 = toRad(lat2);
+
+      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+      var d = R * c;
+      return Math.round(d);
+    }
+
+    // Converts numeric degrees to radians
+    function toRad(Value) 
+    {
+        return Value * Math.PI / 180;
     }
 
 
@@ -203,7 +288,7 @@
                 <select name="hole" id="hole"  onchange="updateRef()">
                 </select>
             </div>
-            <div id="ref-distance">100 m</div>
+            <div id="ref-distance">- m</div>
         </div>
         <hr>
     </div>
@@ -211,8 +296,8 @@
         <div id="club-container">
         </div>
         <div id="club-tracker-container">
-            <div id="club-selected">3-WD</div>
-            <div id="club-distance">56 m</div>
+            <div id="club-selected">?</div>
+            <div id="club-distance">- m</div>
             <div id="store-distance-button" class="button" onclick="markEnd()">Store distance</div>
             <div id="cancel-back-button" class="button" onclick="markCancel()">Cancel / Back</div>
         </div>
