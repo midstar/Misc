@@ -110,70 +110,111 @@
         height: 55px;
     }
 </style>
+<script src="data.js"></script>
 <script>
+    const GLOB_REF = { lat : undefined, long : undefined};
+    const GLOB_START = { lat : undefined, long : undefined, altitude : undefined};
+
+    window.onload = function() {
+        // Hide club tracker
+        document.getElementById("club-tracker-container").style.display = "none";
+
+        // Fill in courses
+        const elemCourse = document.getElementById("course");
+        for (const course of Object.keys(data["course"])) {
+            const elemOpt = document.createElement("option");
+            elemOpt.setAttribute("value", course);
+            elemOpt.innerText = course;
+            elemCourse.appendChild(elemOpt);
+        }
+
+        // Fill in clubs
+        const elemClub = document.getElementById("club-container");
+        for (const club of data["club"]) {
+            const elemDiv = document.createElement("div");
+            elemDiv.setAttribute("class", "club button");
+            elemDiv.setAttribute("onclick", `markStart("${club}")`);
+            elemDiv.innerText = club;
+            elemClub.appendChild(elemDiv);
+        }
+    };
+
+    function changeCourse() {
+        const course = document.getElementById("course").value;
+
+        // Remove all holes
+        const elemHole = document.getElementById("hole");
+        elemHole.innerHTML = "";
+
+        if (course in data["course"]) {
+            // Fill in holes
+            for (const hole of Object.keys(data["course"][course])) {
+                const elemOpt = document.createElement("option");
+                elemOpt.setAttribute("value", hole);
+                elemOpt.innerText = hole;
+                elemHole.appendChild(elemOpt);
+            }
+        }
+
+        // Update reference position
+        updateRef();
+    }
+
+    function updateRef() {
+        const course = document.getElementById("course").value;
+
+        if (course in data["course"]) {
+            const hole = document.getElementById("hole").value;
+            GLOB_REF.lat  = data["course"][course][hole][0];
+            GLOB_REF.long = data["course"][course][hole][1];
+        }
+    }
+
+    function markStart(club) {
+        document.getElementById("club-container").style.display = "none";
+        document.getElementById("club-tracker-container").style.display = "block";
+        document.getElementById("club-selected").innerHTML = club;
+    }
+
+    function markEnd() {
+        document.getElementById("club-container").style.display = "flex";
+        document.getElementById("club-tracker-container").style.display = "none";
+    }
+
+    function markCancel() {
+        document.getElementById("club-container").style.display = "flex";
+        document.getElementById("club-tracker-container").style.display = "none";
+    }
+
+
 </script>
 </head>
 <body>
     <div id="header-container">
         <div id="course-container">
             <label for="course">Course:</label>
-            <select name="course" id="course">
-                <option value="viksjo-9">Viksjö 9 hål</option>
-                <option value="viksjo-18">Viksjö 18 hål</option>
+            <select name="course" id="course" onchange="changeCourse()">
+                <option value="none"></option>
             </select>
         </div>
         <div id="hole-ref-distance-container">
             <div id="hole-container">
                 <label for="hole">Hole:</label>
-                <select name="hole" id="hole">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                    <option value="13">13</option>
-                    <option value="14">14</option>
-                    <option value="15">15</option>
-                    <option value="16">16</option>
-                    <option value="17">17</option>
-                    <option value="18">18</option>
+                <select name="hole" id="hole"  onchange="updateRef()">
                 </select>
             </div>
             <div id="ref-distance">100 m</div>
         </div>
         <hr>
     </div>
-    <div id="body-container"><!--
+    <div id="body-container">
         <div id="club-container">
-            <div class="club button">LW</div>
-            <div class="club button">SW</div>
-            <div class="club button">GW</div>
-            <div class="club button">PW</div>
-            <div class="club button">9</div>
-            <div class="club button">8</div>
-            <div class="club button">7</div>
-            <div class="club button">6</div>
-            <div class="club button">5</div>
-            <div class="club button">4</div>
-            <div class="club button">3</div>
-            <div class="club button">2</div>
-            <div class="club button">1</div>
-            <div class="club button">5-WD</div>
-            <div class="club button">3-WD</div>
-            <div class="club button">DRV</div>
-        </div>-->
+        </div>
         <div id="club-tracker-container">
             <div id="club-selected">3-WD</div>
             <div id="club-distance">56 m</div>
-            <div id="store-distance-button" class="button">Store distance</div>
-            <div id="cancel-back-button" class="button">Cancel / Back</div>
+            <div id="store-distance-button" class="button" onclick="markEnd()">Store distance</div>
+            <div id="cancel-back-button" class="button" onclick="markCancel()">Cancel / Back</div>
         </div>
     </div>
     <div id="footer-container">
