@@ -1,1 +1,1 @@
-[Distance calculation in HTML](https://htmlpreview.github.io/?https://github.com/midstar/Misc/blob/master/distance/index.html)
+Misc utilites
