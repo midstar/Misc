@@ -5,6 +5,7 @@ import argparse, os, sys, datetime, shutil
 
 
 class PhotoCopy:
+    # Default names - can be overriden with ini file
     month_to_path = {
         1 : '01 Januari',
         2 : '02 Februari',
@@ -27,10 +28,11 @@ class PhotoCopy:
     STAT_FINISHED = 'Finished'
     STAT_UNHANDLED = 'Unhandled' # Only used internally
 
-    def __init__(self, src, dst):
+    def __init__(self, src, dst, ini = 'photocopy.ini'):
         self.src = src
         self.dst = dst
         self.files = []
+        self.__load_ini(ini)
 
         # Save all files to copy and figure out destination path
         for root, _ ,files in os.walk(src):
@@ -53,6 +55,22 @@ class PhotoCopy:
 
         # Reset stats - use counters for efficiency
         self.__reset_stats()
+    
+    def __load_ini(self, ini):
+        full_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ini)
+        if os.path.exists(full_path) : 
+            conf = {}
+            with open(full_path, 'r') as file:
+                for line in file:
+                    if len(line) > 0 and line[0] != '#':
+                        parts = line.split('=')
+                        if len(parts) == 2:
+                            conf[parts[0].strip()] = parts[1].strip()
+            # Configure months
+            for i, key in enumerate(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', \
+                                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']):
+                if key in conf: 
+                    self.month_to_path[i + 1] = conf[key]
 
     def __reset_stats(self):
         self.nbr_files = len(self.files)
